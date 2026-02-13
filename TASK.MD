@@ -1,0 +1,41 @@
+# Tasks
+
+- [x] Project Initialization (Go) <!-- id: 0 -->
+    - [x] Initialize Go Module `go mod init dbbridge` <!-- id: 1 -->
+    - [x] Create Directory Structure (`cmd/`, `internal/api`, `internal/core`, `internal/data`, `internal/service`, `web/`) <!-- id: 2 -->
+    - [x] Setup `.gitignore` <!-- id: 3 -->
+- [x] Core Infrastructure <!-- id: 4 -->
+    - [x] Implement Configuration Loading (`godotenv`) with `DBBRIDGE_KEY` <!-- id: 5 -->
+    - [x] Implement Encryption Service (AES-256-GCM) <!-- id: 6 -->
+    - [x] Implement Logger (File + Stdout) <!-- id: 7 -->
+- [x] Data Layer (SQLite) <!-- id: 8 -->
+    - [x] Setup SQLite Connection & Schema Migrations <!-- id: 9 -->
+    - [x] Implement Repositories (`ConnectionRepo`, `QueryRepo`, `UserRepo`) <!-- id: 10 -->
+- [x] Business Logic <!-- id: 11 -->
+    - [x] Implement ODBC Executor (`alexbrainman/odbc`) <!-- id: 12 -->
+    - [x] Implement SQL Parameter Parser (`{var}` -> `?`) <!-- id: 13 -->
+- [x] API Development (`net/http` or Echo) <!-- id: 14 -->
+    - [x] Implement Middleware (Auth, Logging) <!-- id: 15 -->
+    - [x] Implement Execution Endpoint `POST /api/{conn}/{query}` <!-- id: 16 -->
+- [x] Admin UI (HTML Templates) <!-- id: 17 -->
+    - [x] Setup HTTP Handlers for UI <!-- id: 18 -->
+    - [x] Implement Dashboard & Layout (CSS) <!-- id: 19 -->
+    - [/] Implement CRUD Pages (Connections, Queries, Users) <!-- id: 20 -->
+        - [x] Connection Form (Add/Edit) <!-- id: 20.1 -->
+        - [x] Query Form with SQL Editor (CodeMirror) <!-- id: 20.2 -->
+        - [x] User Management Page (List/Add/Edit) <!-- id: 20.4 -->
+    - [x] Implement Authentication & Setup <!-- id: 20.3 -->
+        - [x] First-Time Setup Page (Create Admin) <!-- id: 20.3.1 -->
+        - [x] Login Page & Session Management <!-- id: 20.3.2 -->
+        - [x] Auth Middleware for Admin Routes <!-- id: 20.3.3 -->
+    - [x] Implement Audit Log View <!-- id: 21 -->
+        - [x] Audit Repository <!-- id: 21.1 -->
+        - [x] Integrate Audit Log with Executor <!-- id: 21.2 -->
+        - [x] Audit Log UI Page <!-- id: 21.3 -->
+- [ ] Service & Deployment <!-- id: 22 -->
+    - [ ] Add Windows Service Support (`kardianos/service`) <!-- id: 23 -->
+    - [x] Verify Build & Run <!-- id: 24 -->
+        - [x] Build Script <!-- id: 24.1 -->
+        - [x] Auto-generate Config Key <!-- id: 24.2 -->
+        - [x] Fix CGO/SQLite Issue <!-- id: 24.3 -->
+        - [/] Fix 404 Admin Users <!-- id: 24.4 -->

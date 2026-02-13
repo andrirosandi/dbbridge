@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DbBridge - Login</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css">
+    <style>
+        body {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+        }
+
+        main {
+            width: 100%;
+            max-width: 400px;
+            padding: 2rem;
+        }
+    </style>
+</head>
+
+<body>
+    <main class="container">
+        <hgroup>
+            <h1>DbBridge</h1>
+            <h2>Admin Login</h2>
+        </hgroup>
+
+        {{if .Error}}
+        <article style="background-color: #ffe6e6; border-color: red; color: red; padding: 1rem; margin-bottom: 1rem;">
+            {{.Error}}
+        </article>
+        {{end}}
+
+        <form method="POST" action="/login">
+            <label for="username">Username</label>
+            <input type="text" id="username" name="username" required>
+
+            <label for="password">Password</label>
+            <input type="password" id="password" name="password" required>
+
+            <button type="submit">Login</button>
+        </form>
+    </main>
+</body>
+
+</html>

@@ -1,0 +1,39 @@
+{{define "audit_logs"}}
+<h2>Execution Audit Logs</h2>
+<figure>
+    <table role="grid">
+        <thead>
+            <tr>
+                <th scope="col">Time</th>
+                <th scope="col">Status</th>
+                <th scope="col">Conn ID</th>
+                <th scope="col">Query ID</th>
+                <th scope="col">Duration (ms)</th>
+                <th scope="col">Error</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{range .Logs}}
+            <tr>
+                <td>{{.Timestamp.Format "2006-01-02 15:04:05"}}</td>
+                <td>
+                    {{if eq .Status "SUCCESS"}}
+                    <span style="color: green;">SUCCESS</span>
+                    {{else}}
+                    <span style="color: red;">ERROR</span>
+                    {{end}}
+                </td>
+                <td>{{.ConnectionID}}</td>
+                <td>{{.QueryID}}</td>
+                <td>{{.DurationMs}}</td>
+                <td>{{if .ErrorMessage}}<small style="color: red;">{{.ErrorMessage}}</small>{{end}}</td>
+            </tr>
+            {{else}}
+            <tr>
+                <td colspan="6" style="text-align: center;">No logs found.</td>
+            </tr>
+            {{end}}
+        </tbody>
+    </table>
+</figure>
+{{end}}

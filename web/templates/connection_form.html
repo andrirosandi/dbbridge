@@ -1,0 +1,40 @@
+{{define "connection_form"}}
+<h2>{{if .IsEdit}}Edit{{else}}New{{end}} Connection</h2>
+<form method="POST" action="/admin/connections/save">
+    {{if .IsEdit}}
+    <input type="hidden" name="id" value="{{.Connection.ID}}">
+    {{end}}
+
+    <label for="name">Name</label>
+    <input type="text" id="name" name="name" value="{{.Connection.Name}}" required placeholder="e.g. ERP_Database">
+
+    <label for="driver">ODBC Driver</label>
+    <input type="text" id="driver" name="driver" value="{{.Connection.Driver}}" required
+        placeholder="e.g. Sql Anywhere 10">
+
+    <label for="connection_string">
+        Connection String
+        {{if .IsEdit}}<small>(Leave blank to keep existing password/string)</small>{{end}}
+    </label>
+    <input type="text" id="connection_string" name="connection_string" value="" {{if not .IsEdit}}required{{end}}
+        placeholder="uid=dba;pwd=sql;Links=tcpip;ServerName=demo">
+    <small>Password will be encrypted before saving.</small>
+
+    <div style="margin-top: 1rem;">
+        <label for="is_active">
+            <input type="checkbox" id="is_active" name="is_active" {{if or (not .IsEdit)
+                .Connection.IsActive}}checked{{end}}>
+            Active
+        </label>
+    </div>
+
+    <div class="grid" style="margin-top: 2rem;">
+        <button type="submit">Save Connection</button>
+        <a href="/admin/connections" role="button" class="secondary">Cancel</a>
+        {{if .IsEdit}}
+        <a href="/admin/connections/delete?id={{.Connection.ID}}" role="button" class="contrast"
+            onclick="return confirm('Are you sure?')">Delete</a>
+        {{end}}
+    </div>
+</form>
+{{end}}

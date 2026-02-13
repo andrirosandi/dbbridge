@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DbBridge Admin - {{.Data.Title}}</title>
+    <!-- Use Pico.css for instant nice styling -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css">
+    <style>
+        body {
+            padding-top: 2rem;
+        }
+
+        nav {
+            margin-bottom: 2rem;
+            border-bottom: 1px solid #333;
+            padding-bottom: 1rem;
+        }
+
+        .container-fluid {
+            max-width: 1400px;
+        }
+    </style>
+</head>
+
+<body>
+    <main class="container">
+        <nav>
+            <ul>
+                <li><strong>DbBridge</strong></li>
+            </ul>
+            <ul>
+                <li><a href="/admin" role="button" class="outline {{if eq .Page "
+                        dashboard.html"}}primary{{else}}secondary{{end}}">Dashboard</a></li>
+                <li><a href="/admin/connections" role="button" class="outline {{if eq .Page "
+                        connections.html"}}primary{{else}}secondary{{end}}">Connections</a></li>
+                <li><a href="/admin/queries" role="button" class="outline {{if eq .Page "
+                        queries.html"}}primary{{else}}secondary{{end}}">Queries</a></li>
+                <li><a href="/admin/users" role="button" class="outline secondary">Users</a></li>
+                <li><a href="/admin/logs" role="button" class="outline secondary">Logs</a></li>
+            </ul>
+        </nav>
+
+        {{if eq .Page "dashboard.html"}}
+        {{template "dashboard" .Data}}
+        {{else if eq .Page "connections.html"}}
+        {{template "connections" .Data}}
+        {{else if eq .Page "queries.html"}}
+        {{template "queries" .Data}}
+        {{else if eq .Page "users.html"}}
+        {{template "users" .Data}}
+        {{else if eq .Page "user_form.html"}}
+        {{template "user_form" .Data}}
+        {{else if eq .Page "logs.html"}}
+        {{template "audit_logs" .Data}}
+        {{else if eq .Page "audit_logs.html"}}
+        {{template "audit_logs" .Data}}
+        {{else if eq .Page "connection_form.html"}}
+        {{template "connection_form" .Data}}
+        {{else if eq .Page "query_form.html"}}
+        {{template "query_form" .Data}}
+        {{else}}
+        <article>
+            <h3>Page Not Found or Not Implemented: {{.Page}}</h3>
+        </article>
+        {{end}}
+
+        <footer>
+            <small>DbBridge v1.0.0 - &copy; 2026</small>
+        </footer>
+    </main>
+</body>
+
+</html>

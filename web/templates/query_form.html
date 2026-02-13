@@ -1,0 +1,56 @@
+{{define "query_form"}}
+<!-- CodeMirror CSS -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/dracula.min.css">
+
+<h2>{{if .IsEdit}}Edit{{else}}New{{end}} Query</h2>
+<form method="POST" action="/admin/queries/save">
+    {{if .IsEdit}}
+    <input type="hidden" name="id" value="{{.Query.ID}}">
+    {{end}}
+
+    <label for="slug">Slug (URL endpoint)</label>
+    <input type="text" id="slug" name="slug" value="{{.Query.Slug}}" required placeholder="e.g. get-customer-by-id">
+
+    <label for="description">Description</label>
+    <input type="text" id="description" name="description" value="{{.Query.Description}}"
+        placeholder="Fetch customer details">
+
+    <label for="sql_text">SQL Query</label>
+    <textarea id="sql_text" name="sql_text" required>{{.Query.SQLText}}</textarea>
+    <small>Use <code>{varname}</code> for parameters. Example: <code>SELECT * FROM table WHERE id = {id}</code></small>
+
+    <div style="margin-top: 1rem;">
+        <label for="is_active">
+            <input type="checkbox" id="is_active" name="is_active" {{if or (not .IsEdit)
+                .Query.IsActive}}checked{{end}}>
+            Active
+        </label>
+    </div>
+
+    <div class="grid" style="margin-top: 2rem;">
+        <button type="submit">Save Query</button>
+        <a href="/admin/queries" role="button" class="secondary">Cancel</a>
+        {{if .IsEdit}}
+        <a href="/admin/queries/delete?id={{.Query.ID}}" role="button" class="contrast"
+            onclick="return confirm('Are you sure?')">Delete</a>
+        {{end}}
+    </div>
+</form>
+
+<!-- CodeMirror JS -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/sql/sql.min.js"></script>
+<script>
+    var editor = CodeMirror.fromTextArea(document.getElementById("sql_text"), {
+        mode: "text/x-sql",
+        theme: "dracula",
+        lineNumbers: true,
+        matchBrackets: true,
+        indentWithTabs: true,
+        smartIndent: true,
+        lineWrapping: true
+    });
+    editor.setSize(null, 400); // Height
+</script>
+{{end}}

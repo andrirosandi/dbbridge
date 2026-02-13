@@ -1,0 +1,43 @@
+{{define "users"}}
+<h2>User Management</h2>
+<div style="margin-bottom: 1rem; text-align: right;">
+    <a href="/admin/users/new" role="button">Add New User</a>
+</div>
+
+<figure>
+    <table role="grid">
+        <thead>
+            <tr>
+                <th scope="col">ID</th>
+                <th scope="col">Username</th>
+                <th scope="col">Created At</th>
+                <th scope="col">Status</th>
+                <th scope="col">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{range .Users}}
+            <tr>
+                <td>{{.ID}}</td>
+                <td>{{.Username}}</td>
+                <td>{{.CreatedAt.Format "2006-01-02"}}</td>
+                <td>
+                    {{if .IsActive}}
+                    <span style="color: green;">Active</span>
+                    {{else}}
+                    <span style="color: red;">Inactive</span>
+                    {{end}}
+                </td>
+                <td>
+                    <a href="/admin/users/edit?id={{.ID}}">Edit</a>
+                </td>
+            </tr>
+            {{else}}
+            <tr>
+                <td colspan="5" style="text-align: center;">No users found.</td>
+            </tr>
+            {{end}}
+        </tbody>
+    </table>
+</figure>
+{{end}}

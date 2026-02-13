@@ -1,0 +1,23 @@
+{{define "dashboard"}}
+<article>
+    <header>Server Status</header>
+    <div class="grid">
+        <div>
+            <h3>Active</h3>
+            <p>System is running normally.</p>
+        </div>
+        <div>
+            <h3>Uptime</h3>
+            <p>--</p> <!-- TODO: Add uptime logic -->
+        </div>
+    </div>
+</article>
+
+<div class="grid">
+    <article>
+        <header>Quick Actions</header>
+        <a href="/admin/connections" role="button">Manage Connections</a>
+        <a href="/admin/queries" role="button" class="contrast">Register New Query</a>
+    </article>
+</div>
+{{end}}

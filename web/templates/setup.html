@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DbBridge - Setup</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css">
+    <style>
+        body {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+        }
+
+        main {
+            width: 100%;
+            max-width: 500px;
+            padding: 2rem;
+        }
+    </style>
+</head>
+
+<body>
+    <main class="container">
+        <h1>Welcome to DbBridge</h1>
+        <p>This is the first time setup. Please create an administrator account.</p>
+
+        {{if .Error}}
+        <article style="background-color: #ffe6e6; border: 1px solid red; color: red;">
+            {{.Error}}
+        </article>
+        {{end}}
+
+        <form method="POST" action="/setup">
+            <label for="username">Username</label>
+            <input type="text" id="username" name="username" required>
+
+            <label for="password">Password</label>
+            <input type="password" id="password" name="password" required minlength="8">
+
+            <button type="submit">Create Admin Account</button>
+        </form>
+    </main>
+</body>
+
+</html>
