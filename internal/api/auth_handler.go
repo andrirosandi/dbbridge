@@ -115,11 +115,10 @@ func (h *AuthHandler) AdminMiddleware(next http.Handler) http.Handler {
 }
 
 func (h *AuthHandler) render(w http.ResponseWriter, tmplName string, data interface{}) {
-	// Re-using template execution logic.
-	// In real app, we might share this between handlers.
-	// For now simple duplicate or we can extract to helper.
-	// Assuming templates passed in are "standalone" for login/setup
-	// Using a minimal layout for login/setup would be good.
+	if h.templates == nil {
+		http.Error(w, "AuthTemplates not loaded", http.StatusInternalServerError)
+		return
+	}
 
 	// Create a new template executor for these standalone pages if not part of main layout
 	err := h.templates.ExecuteTemplate(w, tmplName, data)

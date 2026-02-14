@@ -1,6 +1,6 @@
 {{define "connection_form"}}
 <h2>{{if .IsEdit}}Edit{{else}}New{{end}} Connection</h2>
-<form method="POST" action="/admin/connections/save">
+<form method="POST" action="/admin/connections/save" id="connForm">
     {{if .IsEdit}}
     <input type="hidden" name="id" value="{{.Connection.ID}}">
     {{end}}
@@ -8,17 +8,52 @@
     <label for="name">Name</label>
     <input type="text" id="name" name="name" value="{{.Connection.Name}}" required placeholder="e.g. ERP_Database">
 
-    <label for="driver">ODBC Driver</label>
-    <input type="text" id="driver" name="driver" value="{{.Connection.Driver}}" required
-        placeholder="e.g. Sql Anywhere 10">
+    <label for="driver">Connection Preset</label>
+    <select id="preset" onchange="applyPreset()" required>
+        <option value="" disabled {{if not .Connection.Driver}}selected{{end}}>-- Select a Preset --</option>
+        <optgroup label="Native Drivers">
+            <option value="postgres" {{if eq .Connection.Driver "postgres" }}selected{{end}}
+                data-template="host=localhost port=5432 user=postgres password=secret dbname=mydb sslmode=disable">
+                PostgreSQL (Native)</option>
+            <option value="mysql" {{if eq .Connection.Driver "mysql" }}selected{{end}}
+                data-template="user:password@tcp(127.0.0.1:3306)/dbname">MySQL (Native)</option>
+            <option value="sqlserver" {{if eq .Connection.Driver "sqlserver" }}selected{{end}}
+                data-template="sqlserver://username:password@localhost:1433?database=dbname">SQL
+                Server (Native)</option>
+            <option value="sqlite" {{if eq .Connection.Driver "sqlite" }}selected{{end}}
+                data-template="file:test.db?cache=shared&mode=rwc">SQLite (Native)</option>
+        </optgroup>
+        <optgroup label="ODBC">
+            <option value="odbc" {{if eq .Connection.Driver "odbc" }}selected{{end}}
+                data-template="Driver={SQL Anywhere 10};Uid=dba;Pwd=sql;EngineName=demo;">Sybase SQL
+                Anywhere (ODBC)</option>
+            <!-- Other ODBC options are duplicates of 'odbc' value, so just one will be selected by default if we match by value. 
+                 To be smarter, we could match by prefix of connection string, but for now matching 'odbc' is enough to show it's ODBC. 
+                 The user can re-select if they want to switch template. -->
+            <option value="odbc"
+                data-template="Driver={PostgreSQL Unicode};Server=localhost;Port=5432;Database=mydb;Uid=postgres;Pwd=secret;">
+                PostgreSQL (ODBC)</option>
+            <option value="odbc"
+                data-template="Driver={MySQL ODBC 8.0 Driver};Server=localhost;User=root;Password=secret;Database=mydb;">
+                MySQL (ODBC)</option>
+            <option value="odbc"
+                data-template="Driver={ODBC Driver 17 for SQL Server};Server=localhost;Database=mydb;Uid=sa;Pwd=secret;">
+                SQL Server (ODBC)</option>
+            <option value="odbc" data-template="">Generic ODBC (Custom)</option>
+        </optgroup>
+    </select>
+
+    <!-- Hidden input to store the actual driver name for the backend -->
+    <input type="hidden" id="driver" name="driver" value="{{.Connection.Driver}}">
 
     <label for="connection_string">
         Connection String
-        {{if .IsEdit}}<small>(Leave blank to keep existing password/string)</small>{{end}}
+        {{if .IsEdit}}<small>(Leave blank to keep existing)</small>{{end}}
     </label>
-    <input type="text" id="connection_string" name="connection_string" value="" {{if not .IsEdit}}required{{end}}
-        placeholder="uid=dba;pwd=sql;Links=tcpip;ServerName=demo">
-    <small>Password will be encrypted before saving.</small>
+    <!-- Use decrypted string if available -->
+    <input type="text" id="connection_string" name="connection_string" value="{{.ConnectionStringDec}}" {{if not
+        .IsEdit}}required{{end}} placeholder="Select a preset to auto-fill">
+    <small>The entire connection string will be encrypted before saving.</small>
 
     <div style="margin-top: 1rem;">
         <label for="is_active">
@@ -30,11 +65,74 @@
 
     <div class="grid" style="margin-top: 2rem;">
         <button type="submit">Save Connection</button>
+        <button type="button" class="contrast" id="btnTest">Test Connection</button>
         <a href="/admin/connections" role="button" class="secondary">Cancel</a>
         {{if .IsEdit}}
-        <a href="/admin/connections/delete?id={{.Connection.ID}}" role="button" class="contrast"
+        <a href="/admin/connections/delete?id={{.Connection.ID}}" role="button" class="outline headings"
             onclick="return confirm('Are you sure?')">Delete</a>
         {{end}}
     </div>
 </form>
+
+<script>
+    document.getElementById('btnTest').addEventListener('click', async () => {
+        const driver = document.getElementById('driver').value;
+        const connStr = document.getElementById('connection_string').value;
+
+        if (!driver) {
+            alert("Please select a driver first.");
+            return;
+        }
+        if (!connStr && "{{.IsEdit}}" !== "true") {
+            alert("Please enter a connection string.");
+            return;
+        }
+
+        const btn = document.getElementById('btnTest');
+        const origText = btn.innerText;
+        btn.innerText = "Testing...";
+        btn.disabled = true;
+
+        try {
+            const formData = new FormData();
+            formData.append('driver', driver);
+            formData.append('connection_string', connStr);
+
+            const response = await fetch('/admin/connections/test', {
+                method: 'POST',
+                body: formData
+            });
+
+            const text = await response.text();
+            alert(text);
+        } catch (e) {
+            alert("Error: " + e.message);
+        } finally {
+            btn.innerText = origText;
+            btn.disabled = false;
+        }
+    });
+
+    function applyPreset() {
+        const presetSelect = document.getElementById('preset');
+        const selectedOption = presetSelect.options[presetSelect.selectedIndex];
+        const driverInput = document.getElementById('driver');
+        const connStrInput = document.getElementById('connection_string');
+
+        if (selectedOption.value) {
+            driverInput.value = selectedOption.value;
+            // Only autofill if empty or user explicitly changed preset (logic can be improved)
+            // For now, we prefer not to overwrite existing data if editing, unless user explicitly changes preset?
+            // Actually user request is "di klik maka akan muncul default".
+            // So we fill it.
+            connStrInput.value = selectedOption.getAttribute('data-template');
+        }
+    }
+
+    // Init: If editing, try to select the matching preset? 
+    // It's hard to match preset by driver alone (odbc matches multiple).
+    // So we assume valid editing state but maybe don't pre-select preset dropdown, just keep hidden driver value.
+    // We can show current driver in a small tag.
+    // Or just leave preset blank on edit.
+</script>
 {{end}}

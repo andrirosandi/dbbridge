@@ -32,12 +32,13 @@ type DBConnection struct {
 }
 
 type SavedQuery struct {
-	ID           int64  `json:"id"`
-	Slug         string `json:"slug"`
-	Description  string `json:"description"`
-	SQLText      string `json:"sql_text"`
-	ParamsConfig string `json:"params_config"` // JSON string
-	IsActive     bool   `json:"is_active"`
+	ID                   int64   `json:"id"`
+	Slug                 string  `json:"slug"`
+	Description          string  `json:"description"`
+	SQLText              string  `json:"sql_text"`
+	ParamsConfig         string  `json:"params_config"` // JSON string
+	IsActive             bool    `json:"is_active"`
+	AllowedConnectionIDs []int64 `json:"allowed_connection_ids"` // Many-to-many
 }
 
 type AuditLog struct {

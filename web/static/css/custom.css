@@ -1,0 +1,12 @@
+/* Fix button height inconsistency in grid layouts */
+.grid > button,
+.grid > a[role="button"] {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%; /* Ensure they fill the grid cell height */
+    min-height: 50px; /* Enforce a minimum height */
+    line-height: normal; /* Reset line-height */
+    padding: 10px 20px; /* Normalize padding */
+    margin-bottom: 0; /* Remove bottom margin if any */
+}

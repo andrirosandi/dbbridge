@@ -110,3 +110,129 @@ INFO: 2026/02/13 11:16:56 middleware.go:24: GET /admin/connections 500 4.1328ms
 INFO: 2026/02/13 11:19:37 main.go:34: Starting DbBridge...
 INFO: 2026/02/13 11:19:38 main.go:106: Server listening on port 8080
 ERROR: 2026/02/13 11:19:38 main.go:108: Server startup failed: listen tcp :8080: bind: Only one usage of each socket address (protocol/network address/port) is normally permitted.
+INFO: 2026/02/13 11:33:24 main.go:34: Starting DbBridge...
+INFO: 2026/02/13 11:33:24 main.go:106: Server listening on port 8080
+INFO: 2026/02/13 11:34:41 middleware.go:24: GET /admin/connections 500 95.2855ms
+INFO: 2026/02/13 11:34:48 middleware.go:24: GET /admin/ 404 0s
+INFO: 2026/02/13 11:34:53 middleware.go:24: GET / 302 3.8239ms
+INFO: 2026/02/13 11:34:53 middleware.go:24: GET /setup 302 33.7172ms
+INFO: 2026/02/13 11:34:55 main.go:34: Starting DbBridge...
+INFO: 2026/02/13 11:34:55 main.go:106: Server listening on port 8080
+ERROR: 2026/02/13 11:34:55 main.go:108: Server startup failed: listen tcp :8080: bind: Only one usage of each socket address (protocol/network address/port) is normally permitted.
+INFO: 2026/02/13 11:35:47 main.go:34: Starting DbBridge...
+INFO: 2026/02/13 11:35:47 main.go:106: Server listening on port 8080
+INFO: 2026/02/13 11:37:01 main.go:34: Starting DbBridge...
+INFO: 2026/02/13 11:37:01 main.go:106: Server listening on port 8080
+ERROR: 2026/02/13 11:37:01 main.go:108: Server startup failed: listen tcp :8080: bind: Only one usage of each socket address (protocol/network address/port) is normally permitted.
+INFO: 2026/02/13 11:37:35 main.go:34: Starting DbBridge...
+INFO: 2026/02/13 11:37:35 main.go:106: Server listening on port 8080
+ERROR: 2026/02/13 11:37:35 main.go:108: Server startup failed: listen tcp :8080: bind: Only one usage of each socket address (protocol/network address/port) is normally permitted.
+INFO: 2026/02/13 11:38:05 main.go:34: Starting DbBridge...
+INFO: 2026/02/13 11:38:06 main.go:106: Server listening on port 8080
+ERROR: 2026/02/13 11:38:06 main.go:108: Server startup failed: listen tcp :8080: bind: Only one usage of each socket address (protocol/network address/port) is normally permitted.
+INFO: 2026/02/13 11:38:43 middleware.go:24: GET / 302 419.7604ms
+INFO: 2026/02/13 11:38:43 middleware.go:24: GET /setup 302 1.9914ms
+INFO: 2026/02/13 11:39:08 main.go:113: Shutting down server...
+INFO: 2026/02/13 11:39:08 main.go:121: Server stopped
+INFO: 2026/02/13 11:39:17 main.go:34: Starting DbBridge...
+INFO: 2026/02/13 11:39:17 main.go:106: Server listening on port 8080
+INFO: 2026/02/13 11:39:55 middleware.go:24: GET /login 200 7.9982ms
+INFO: 2026/02/13 11:40:09 middleware.go:24: POST /login 302 551.9778ms
+INFO: 2026/02/13 11:40:09 middleware.go:24: GET /admin 500 0s
+INFO: 2026/02/13 11:40:34 main.go:34: Starting DbBridge...
+INFO: 2026/02/13 11:40:34 main.go:106: Server listening on port 8080
+INFO: 2026/02/13 11:40:48 middleware.go:24: GET /admin 500 17.9967ms
+INFO: 2026/02/13 11:41:39 main.go:34: Starting DbBridge...
+INFO: 2026/02/13 11:41:39 main.go:106: Server listening on port 8080
+INFO: 2026/02/13 11:44:24 middleware.go:24: GET /admin 302 196.1647ms
+INFO: 2026/02/13 11:44:24 middleware.go:24: GET /login 200 8.0024ms
+INFO: 2026/02/13 11:47:18 main.go:34: Starting DbBridge...
+INFO: 2026/02/13 11:47:18 main.go:106: Server listening on port 8080
+INFO: 2026/02/13 11:48:08 main.go:34: Starting DbBridge...
+INFO: 2026/02/13 11:48:08 main.go:106: Server listening on port 8080
+INFO: 2026/02/13 11:48:33 middleware.go:24: GET /login 200 6.9976ms
+INFO: 2026/02/13 13:22:50 middleware.go:24: GET / 302 57.184ms
+INFO: 2026/02/13 14:09:35 main.go:34: Starting DbBridge...
+INFO: 2026/02/13 14:09:35 main.go:106: Server listening on port 8080
+ERROR: 2026/02/13 14:09:35 main.go:108: Server startup failed: listen tcp :8080: bind: Only one usage of each socket address (protocol/network address/port) is normally permitted.
+INFO: 2026/02/13 14:09:43 main.go:113: Shutting down server...
+INFO: 2026/02/13 14:09:43 main.go:121: Server stopped
+INFO: 2026/02/13 14:09:49 main.go:34: Starting DbBridge...
+INFO: 2026/02/13 14:09:49 main.go:106: Server listening on port 8080
+INFO: 2026/02/13 14:09:59 middleware.go:24: GET /admin 200 38.332ms
+INFO: 2026/02/13 14:10:02 middleware.go:24: GET /admin 200 509.7µs
+INFO: 2026/02/13 14:10:03 middleware.go:24: GET /admin/connections 200 12.1054ms
+INFO: 2026/02/13 14:10:05 middleware.go:24: GET /admin/connections/new 200 11.1697ms
+INFO: 2026/02/13 14:15:19 main.go:113: Shutting down server...
+INFO: 2026/02/13 14:15:20 main.go:121: Server stopped
+INFO: 2026/02/13 14:17:08 main.go:34: Starting DbBridge...
+INFO: 2026/02/13 14:17:08 main.go:106: Server listening on port 8080
+INFO: 2026/02/13 14:33:27 main.go:34: Starting DbBridge...
+INFO: 2026/02/13 14:33:27 main.go:106: Server listening on port 8080
+INFO: 2026/02/13 15:27:03 main.go:34: Starting DbBridge...
+INFO: 2026/02/13 15:27:03 main.go:106: Server listening on port 8080
+ERROR: 2026/02/13 15:27:03 main.go:108: Server startup failed: listen tcp :8080: bind: Only one usage of each socket address (protocol/network address/port) is normally permitted.
+INFO: 2026/02/13 15:27:10 main.go:113: Shutting down server...
+INFO: 2026/02/13 15:27:10 main.go:121: Server stopped
+INFO: 2026/02/13 15:27:13 main.go:34: Starting DbBridge...
+INFO: 2026/02/13 15:27:13 main.go:106: Server listening on port 8080
+INFO: 2026/02/13 15:27:32 middleware.go:24: GET / 302 17.5453ms
+INFO: 2026/02/13 15:27:32 middleware.go:24: GET /setup 302 9.0037ms
+INFO: 2026/02/13 15:27:33 middleware.go:24: GET /login 200 377.2117ms
+INFO: 2026/02/13 15:27:55 middleware.go:24: POST /login 302 129.4401ms
+INFO: 2026/02/13 15:27:55 middleware.go:24: GET /admin 200 8.7395ms
+INFO: 2026/02/13 15:27:58 middleware.go:24: GET /admin/connections 200 0s
+INFO: 2026/02/13 15:27:59 middleware.go:24: GET /admin/connections/new 200 3.3335ms
+INFO: 2026/02/13 15:30:36 middleware.go:24: GET /admin/connections 200 1.8383ms
+INFO: 2026/02/13 15:30:39 middleware.go:24: GET /admin/queries 200 1.6661ms
+INFO: 2026/02/13 15:30:40 middleware.go:24: GET /admin/queries/new 200 9.4484ms
+INFO: 2026/02/13 15:31:00 middleware.go:24: GET /admin/queries 200 0s
+INFO: 2026/02/13 15:31:02 middleware.go:24: GET /admin/users 200 8.7601ms
+INFO: 2026/02/13 15:31:05 middleware.go:24: GET /admin/users/edit 200 5.1185ms
+INFO: 2026/02/13 15:31:08 middleware.go:24: GET /admin/logs 200 10.2134ms
+INFO: 2026/02/13 15:31:10 middleware.go:24: GET /admin/connections 200 864µs
+INFO: 2026/02/13 15:31:24 middleware.go:24: GET /admin/connections/new 200 2.6719ms
+INFO: 2026/02/13 15:31:36 middleware.go:24: GET /admin/connections 200 11.0483ms
+INFO: 2026/02/13 15:31:47 middleware.go:24: GET /admin/queries 200 1.3624ms
+INFO: 2026/02/13 15:41:41 main.go:34: Starting DbBridge...
+INFO: 2026/02/13 15:41:42 main.go:106: Server listening on port 8080
+INFO: 2026/02/13 15:45:13 middleware.go:24: GET /admin/queries/new 200 67.5617ms
+INFO: 2026/02/13 15:45:16 middleware.go:24: GET /admin/connections 200 9.0708ms
+INFO: 2026/02/13 15:45:18 middleware.go:24: GET /admin/connections/new 200 2.2569ms
+INFO: 2026/02/13 15:47:00 middleware.go:24: POST /admin/connections/test 500 2.2453ms
+INFO: 2026/02/13 15:54:05 main.go:41: Starting DbBridge...
+INFO: 2026/02/13 15:54:05 main.go:113: Server listening on port 8080
+INFO: 2026/02/13 15:55:03 main.go:120: Shutting down server...
+INFO: 2026/02/13 15:55:03 main.go:128: Server stopped
+INFO: 2026/02/13 15:55:15 main.go:41: Starting DbBridge...
+INFO: 2026/02/13 15:55:15 main.go:113: Server listening on port 8080
+INFO: 2026/02/13 15:55:19 middleware.go:24: GET /admin/connections/new 200 63.2676ms
+INFO: 2026/02/13 15:56:13 middleware.go:24: POST /admin/connections/test 200 334.9134ms
+INFO: 2026/02/13 15:56:39 middleware.go:24: POST /admin/connections/save 302 764.2357ms
+INFO: 2026/02/13 15:56:40 middleware.go:24: GET /admin/connections 200 3.7996ms
+INFO: 2026/02/13 15:56:44 middleware.go:24: GET /admin/connections/edit 200 12.0711ms
+INFO: 2026/02/13 16:04:37 middleware.go:24: GET /admin/connections 200 29.1207ms
+INFO: 2026/02/13 16:04:51 middleware.go:24: GET /admin/queries 200 4.7616ms
+INFO: 2026/02/13 16:04:59 middleware.go:24: GET /admin/queries/new 200 43.7563ms
+INFO: 2026/02/13 16:07:53 main.go:41: Starting DbBridge...
+INFO: 2026/02/13 16:07:53 main.go:113: Server listening on port 8080
+INFO: 2026/02/13 16:31:55 middleware.go:24: GET /admin/queries 200 104.6834ms
+INFO: 2026/02/13 16:32:00 middleware.go:24: GET /admin/connections 200 8.7469ms
+INFO: 2026/02/13 16:32:03 middleware.go:24: GET /admin/connections/edit 200 7.3302ms
+INFO: 2026/02/13 16:32:14 middleware.go:24: POST /admin/connections/test 200 242.5259ms
+INFO: 2026/02/13 16:32:24 middleware.go:24: GET /admin/connections 200 1.9592ms
+INFO: 2026/02/13 16:32:28 middleware.go:24: GET /admin/queries 200 1.7893ms
+INFO: 2026/02/13 16:32:32 middleware.go:24: GET /admin/queries/new 200 6.6511ms
+INFO: 2026/02/13 16:41:39 main.go:41: Starting DbBridge...
+INFO: 2026/02/13 16:41:39 main.go:113: Server listening on port 8080
+INFO: 2026/02/13 16:43:55 middleware.go:24: GET /admin/queries/new 200 39.3685ms
+INFO: 2026/02/13 16:55:52 main.go:41: Starting DbBridge...
+INFO: 2026/02/13 16:55:52 main.go:113: Server listening on port 8080
+INFO: 2026/02/13 17:06:05 middleware.go:24: GET /admin/queries/new 200 854.5197ms
+INFO: 2026/02/13 17:06:08 middleware.go:24: GET /static/css/custom.css 200 765.4431ms
+INFO: 2026/02/13 17:06:44 middleware.go:24: GET /admin/connections 200 3.9991ms
+INFO: 2026/02/13 17:06:47 middleware.go:24: GET /admin/connections/edit 200 24.1116ms
+INFO: 2026/02/13 17:06:51 middleware.go:24: POST /admin/connections/test 200 1.4621397s
+INFO: 2026/02/13 17:07:23 main.go:41: Starting DbBridge...
+INFO: 2026/02/13 17:07:23 main.go:113: Server listening on port 8080
+INFO: 2026/02/13 18:03:05 middleware.go:24: GET /images/q.php 404 4.9966ms

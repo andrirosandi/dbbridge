@@ -17,8 +17,33 @@
         placeholder="Fetch customer details">
 
     <label for="sql_text">SQL Query</label>
-    <textarea id="sql_text" name="sql_text" required>{{.Query.SQLText}}</textarea>
-    <small>Use <code>{varname}</code> for parameters. Example: <code>SELECT * FROM table WHERE id = {id}</code></small>
+    <textarea id="sql_text" name="sql_text" rows="5" required
+        placeholder="SELECT * FROM users WHERE id = :id">{{.Query.SQLText}}</textarea>
+    <small>Use <code>:param_name</code> for parameters.</small>
+
+    <div style="margin-top: 1rem;">
+        <label>Allowed Connections</label>
+        <div class="grid" style="grid-template-columns: 1fr; gap: 20px;">
+            {{range .Connections}}
+            <div class="connection-item" style="border: 1px solid #ccc; padding: 10px; border-radius: 5px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <label style="margin-bottom: 0;">
+                        <input type="checkbox" name="connection_ids" value="{{.ID}}" {{if $.IsEdit}} {{range
+                            $.Query.AllowedConnectionIDs}} {{if eq . $.ID}}checked{{end}} {{end}} {{end}}>
+                        {{.Name}} ({{.Driver}})
+                    </label>
+                    <button type="button" class="outline" onclick="runQuery({{.ID}}, 'result-{{.ID}}')"
+                        style="width: auto; padding: 5px 15px; font-size: 0.8rem;">
+                        ▶ Run
+                    </button>
+                </div>
+                <!-- Result Container -->
+                <div id="result-{{.ID}}" style="margin-top: 10px; overflow-x: auto; display: none;"></div>
+            </div>
+            {{end}}
+        </div>
+        <small>Select which databases this query can be executed against.</small>
+    </div>
 
     <div style="margin-top: 1rem;">
         <label for="is_active">
@@ -52,5 +77,61 @@
         lineWrapping: true
     });
     editor.setSize(null, 400); // Height
+
+    async function runQuery(connID, resultDivID) {
+        const sql = editor.getValue();
+        const resultDiv = document.getElementById(resultDivID);
+
+        if (!sql) {
+            alert("Please enter a SQL query first.");
+            return;
+        }
+
+        resultDiv.style.display = 'block';
+        resultDiv.innerHTML = '<small>Running...</small>';
+
+        try {
+            const formData = new FormData();
+            formData.append('connection_id', connID);
+            formData.append('sql_text', sql);
+
+            const response = await fetch('/admin/queries/run', {
+                method: 'POST',
+                body: formData
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || "Unknown error");
+            }
+
+            // Render Table
+            if (!data.rows || data.rows.length === 0) {
+                resultDiv.innerHTML = '<small>No results found or query executed successfully.</small>';
+                return;
+            }
+
+            let html = '<table role="grid" style="font-size: 0.8rem;"><thead><tr>';
+            data.columns.forEach(col => {
+                html += `<th>${col}</th>`;
+            });
+            html += '</tr></thead><tbody>';
+
+            data.rows.forEach(row => {
+                html += '<tr>';
+                data.columns.forEach(col => {
+                    html += `<td>${row[col] !== null ? row[col] : '<em>NULL</em>'}</td>`;
+                });
+                html += '</tr>';
+            });
+            html += '</tbody></table>';
+
+            resultDiv.innerHTML = html;
+
+        } catch (e) {
+            resultDiv.innerHTML = `<small style="color: red;">Error: ${e.message}</small>`;
+        }
+    }
 </script>
 {{end}}

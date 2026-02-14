@@ -15,6 +15,13 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
+
+	// Drivers
+	_ "github.com/alexbrainman/odbc"
+	_ "github.com/denisenkom/go-mssqldb"
+	_ "github.com/go-sql-driver/mysql"
+	_ "github.com/lib/pq"
+	_ "modernc.org/sqlite"
 )
 
 func main() {
@@ -57,7 +64,7 @@ func main() {
 	queryExecutor := service.NewQueryExecutor(connRepo, queryRepo, auditRepo, cryptoSvc)
 
 	// 6. Initialize Handlers
-	webHandler := api.NewWebHandler(connRepo, queryRepo, auditRepo, userRepo, cryptoSvc)
+	webHandler := api.NewWebHandler(connRepo, queryRepo, auditRepo, userRepo, cryptoSvc, cfg)
 	authHandler := api.NewAuthHandler(authSvc, cfg.DbBridgeKey, webHandler.GetTemplates()) // Helper to share templates? Or just reuse.
 	// To avoid circular dependency or change WebHandler, let's just expose Templates field in WebHandler or pass nil if AuthHandler parses its own?
 	// Better: Init templates in main and pass to both. But WebHandler has logic.

@@ -1,14 +1,20 @@
 package api
 
 import (
+	"context"
+	"database/sql"
+	"dbbridge/internal/config"
 	"dbbridge/internal/core"
+	"dbbridge/internal/logger"
 	"dbbridge/internal/service"
+	"encoding/json"
 	"fmt"
 	"html/template"
 	"net/http"
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"golang.org/x/crypto/bcrypt"
@@ -21,17 +27,22 @@ type WebHandler struct {
 	userRepo  core.UserRepository
 	cryptoSvc *service.EncryptionService
 	templates *template.Template
+	config    *config.Config
+	executor  *service.QueryExecutor
 }
 
-func NewWebHandler(connRepo core.ConnectionRepository, queryRepo core.QueryRepository, auditRepo core.AuditRepository, userRepo core.UserRepository, cryptoSvc *service.EncryptionService) *WebHandler {
+func NewWebHandler(connRepo core.ConnectionRepository, queryRepo core.QueryRepository, auditRepo core.AuditRepository, userRepo core.UserRepository, cryptoSvc *service.EncryptionService, cfg *config.Config) *WebHandler {
 	// ... (Template parsing logic remains) ...
 	funcMap := template.FuncMap{
 		"hasPrefix": strings.HasPrefix,
 	}
 	tmpl, err := template.New("").Funcs(funcMap).ParseGlob("web/templates/*.html")
 	if err != nil {
-		fmt.Printf("CRITICAL: Failed to parse templates: %v\n", err)
+		logger.Error.Printf("CRITICAL: Failed to parse templates: %v", err)
+		panic(fmt.Errorf("failed to parse templates: %w", err))
 	}
+
+	executor := service.NewQueryExecutor(connRepo, queryRepo, auditRepo, cryptoSvc)
 
 	return &WebHandler{
 		connRepo:  connRepo,
@@ -40,6 +51,8 @@ func NewWebHandler(connRepo core.ConnectionRepository, queryRepo core.QueryRepos
 		userRepo:  userRepo,
 		cryptoSvc: cryptoSvc,
 		templates: tmpl,
+		config:    cfg,
+		executor:  executor,
 	}
 }
 
@@ -104,8 +117,9 @@ func (h *WebHandler) QueriesList(w http.ResponseWriter, r *http.Request) {
 func (h *WebHandler) ConnectionForm(w http.ResponseWriter, r *http.Request) {
 	idStr := r.URL.Query().Get("id")
 	data := map[string]interface{}{
-		"IsEdit":     false,
-		"Connection": core.DBConnection{},
+		"IsEdit":           false,
+		"Connection":       core.DBConnection{},
+		"SupportedDrivers": h.config.SupportedDrivers,
 	}
 
 	if idStr != "" {
@@ -115,6 +129,12 @@ func (h *WebHandler) ConnectionForm(w http.ResponseWriter, r *http.Request) {
 		if err == nil {
 			data["IsEdit"] = true
 			data["Connection"] = conn
+
+			// Decrypt for display
+			decrypted, err := h.cryptoSvc.Decrypt(conn.ConnectionStringEnc)
+			if err == nil {
+				data["ConnectionStringDec"] = decrypted
+			}
 		}
 	}
 
@@ -179,23 +199,119 @@ func (h *WebHandler) DeleteConnection(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/admin/connections", http.StatusFound)
 }
 
+// TestConnection attempts to ping the database with provided details
+func (h *WebHandler) TestConnection(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	driver := r.FormValue("driver")
+	connStr := r.FormValue("connection_string")
+
+	if driver == "" || connStr == "" {
+		http.Error(w, "Driver and Connection String are required", http.StatusBadRequest)
+		return
+	}
+
+	// Try to connect
+	// Note: You might need to import the driver packages if they aren't already imported in main.go
+	// Since main.go imports modernc.org/sqlite, and likely others should be imported there using _
+	db, err := sql.Open(driver, connStr)
+	if err != nil {
+		http.Error(w, "Failed to open connection: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer db.Close()
+
+	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
+	defer cancel()
+
+	if err := db.PingContext(ctx); err != nil {
+		http.Error(w, "Connection failed: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Connection successful!"))
+}
+
+// RunQuery executes a raw SQL query against a specific connection (for testing)
+func (h *WebHandler) RunQuery(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	connIDStr := r.FormValue("connection_id")
+	sqlText := r.FormValue("sql_text")
+
+	if connIDStr == "" || sqlText == "" {
+		http.Error(w, "Connection ID and SQL Text are required", http.StatusBadRequest)
+		return
+	}
+
+	connID, err := strconv.ParseInt(connIDStr, 10, 64)
+	if err != nil {
+		http.Error(w, "Invalid Connection ID", http.StatusBadRequest)
+		return
+	}
+
+	// For test run, we don't have params from UI yet, or we could accept JSON?
+	// User didn't request params input, so let's pass empty map for now.
+	// If the query has params, it might fail or use defaults if we implemented that.
+	params := make(map[string]interface{})
+
+	result, err := h.executor.ExecuteSQL(r.Context(), connID, sqlText, params)
+	if err != nil {
+		// Return JSON error to be friendly to frontend fetch
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		fmt.Fprintf(w, `{"error": "%s"}`, strings.ReplaceAll(err.Error(), "\"", "\\\""))
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+
+	// Manual JSON marshaling to avoid importing "encoding/json" if not already there?
+	// Actually "encoding/json" is standard. Let's use it.
+	// I need to check imports. "encoding/json" is NOT in imports yet (only "database/sql", etc).
+	// I'll add the import or use a simple string builder if I want to avoid re-imports logic complexity.
+	// But adding import is cleaner.
+	// Wait, I can't easily add import with replace_file_content if it's far away.
+	// I'll use a hacky string build or just assume I can add import in another step.
+	// Let's use the tool to add import first? No, too slow.
+	// I will use fmt.Sprintf for now, or just json.Marshal if I trust I can add the import.
+	// Let's add the import now in a separate step to be safe.
+
+	// ... marshaling
+	if err := json.NewEncoder(w).Encode(result); err != nil {
+		http.Error(w, "Failed to encode result", http.StatusInternalServerError)
+	}
+}
+
 // --- Queries Form Handlers ---
 
 func (h *WebHandler) QueryForm(w http.ResponseWriter, r *http.Request) {
 	idStr := r.URL.Query().Get("id")
+
+	// Fetch all connections for the checkbox list
+	conns, err := h.connRepo.GetAll()
+	if err != nil {
+		http.Error(w, "Failed to load connections: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
 	data := map[string]interface{}{
-		"IsEdit": false,
-		"Query":  core.SavedQuery{},
+		"IsEdit":      false,
+		"Query":       core.SavedQuery{},
+		"Connections": conns,
 	}
 
 	if idStr != "" {
 		id, _ := strconv.ParseInt(idStr, 10, 64)
-		q, err := h.queryRepo.GetByID(id) // Missing GetByID in Repo interface in prev step? Check.
-		// Assuming GetByID exists or I used GetBySlug. Let's assume we need to add GetByID to QueryRepo if missing.
-		// Actually I implemented params for GetBySlug. I should add GetByID to Repo for ID based edit.
-		// For now let's hope I added it or I'll fix it. I see GetBySlug in interface.
-		// I will implement a quick GetByID logic or redundant GetBySlug? ID is safer for editing.
-		if err == nil { // Placeholder if Repo has ID fetch
+		q, err := h.queryRepo.GetByID(id)
+		if err == nil {
 			data["IsEdit"] = true
 			data["Query"] = q
 		}
@@ -208,11 +324,21 @@ func (h *WebHandler) SaveQuery(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	idStr := r.FormValue("id")
 
+	// Parse selected connections
+	var connIDs []int64
+	if r.PostForm.Has("connection_ids") {
+		for _, idVal := range r.PostForm["connection_ids"] {
+			id, _ := strconv.ParseInt(idVal, 10, 64)
+			connIDs = append(connIDs, id)
+		}
+	}
+
 	q := &core.SavedQuery{
-		Slug:        r.FormValue("slug"),
-		Description: r.FormValue("description"),
-		SQLText:     r.FormValue("sql_text"),
-		IsActive:    r.FormValue("is_active") == "on",
+		Slug:                 r.FormValue("slug"),
+		Description:          r.FormValue("description"),
+		SQLText:              r.FormValue("sql_text"),
+		IsActive:             r.FormValue("is_active") == "on",
+		AllowedConnectionIDs: connIDs,
 	}
 
 	if idStr != "" {
@@ -354,7 +480,8 @@ func (h *WebHandler) render(w http.ResponseWriter, tmplName string, data interfa
 	if h.templates == nil {
 		h.ReloadTemplates() // Try loading if nil
 		if h.templates == nil {
-			http.Error(w, "Templates not loaded", http.StatusInternalServerError)
+			logger.Error.Println("WebHandler: Templates are nil after reload attempt")
+			http.Error(w, "WebTemplates not loaded", http.StatusInternalServerError)
 			return
 		}
 	}
@@ -389,6 +516,7 @@ func (h *WebHandler) RegisterRoutes(r chi.Router) {
 	r.Get("/admin/connections/new", h.ConnectionForm)
 	r.Get("/admin/connections/edit", h.ConnectionForm)
 	r.Post("/admin/connections/save", h.SaveConnection)
+	r.Post("/admin/connections/test", h.TestConnection)
 	r.Get("/admin/connections/delete", h.DeleteConnection)
 
 	// Queries
@@ -396,6 +524,7 @@ func (h *WebHandler) RegisterRoutes(r chi.Router) {
 	r.Get("/admin/queries/new", h.QueryForm)
 	r.Get("/admin/queries/edit", h.QueryForm) // Careful: requires ID
 	r.Post("/admin/queries/save", h.SaveQuery)
+	r.Post("/admin/queries/run", h.RunQuery) // Test Run
 	r.Get("/admin/queries/delete", h.DeleteQuery)
 
 	// Users

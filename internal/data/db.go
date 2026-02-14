@@ -36,6 +36,18 @@ func InitDB() (*sql.DB, error) {
 		return nil, err
 	}
 
+	// Query Links
+	_, err = db.Exec(`CREATE TABLE IF NOT EXISTS query_connections (
+		query_id INTEGER NOT NULL,
+		connection_id INTEGER NOT NULL,
+		PRIMARY KEY (query_id, connection_id),
+		FOREIGN KEY (query_id) REFERENCES queries(id) ON DELETE CASCADE,
+		FOREIGN KEY (connection_id) REFERENCES connections(id) ON DELETE CASCADE
+	);`)
+	if err != nil {
+		return nil, err
+	}
+
 	return db, nil
 }
 

@@ -14,8 +14,9 @@ import (
 )
 
 type Config struct {
-	Port        int
-	DbBridgeKey string
+	Port             int
+	DbBridgeKey      string
+	SupportedDrivers []string
 }
 
 func Load() (*Config, error) {
@@ -47,9 +48,19 @@ func Load() (*Config, error) {
 		}
 	}
 
+	driversStr := os.Getenv("SUPPORTED_DRIVERS")
+	var drivers []string
+	if driversStr != "" {
+		drivers = strings.Split(driversStr, ",")
+	} else {
+		// Default drivers if not specified
+		drivers = []string{"Sql Anywhere 10", "PostgreSQL", "MySQL", "SQLite", "SQL Server"}
+	}
+
 	return &Config{
-		Port:        port,
-		DbBridgeKey: key,
+		Port:             port,
+		DbBridgeKey:      key,
+		SupportedDrivers: drivers,
 	}, nil
 }
 

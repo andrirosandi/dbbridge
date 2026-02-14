@@ -7,6 +7,7 @@
     <title>DbBridge Admin - {{.Data.Title}}</title>
     <!-- Use Pico.css for instant nice styling -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css">
+    <link rel="stylesheet" href="/static/css/custom.css">
     <style>
         body {
             padding-top: 2rem;
@@ -31,12 +32,9 @@
                 <li><strong>DbBridge</strong></li>
             </ul>
             <ul>
-                <li><a href="/admin" role="button" class="outline {{if eq .Page "
-                        dashboard.html"}}primary{{else}}secondary{{end}}">Dashboard</a></li>
-                <li><a href="/admin/connections" role="button" class="outline {{if eq .Page "
-                        connections.html"}}primary{{else}}secondary{{end}}">Connections</a></li>
-                <li><a href="/admin/queries" role="button" class="outline {{if eq .Page "
-                        queries.html"}}primary{{else}}secondary{{end}}">Queries</a></li>
+                <li><a href="/admin" role="button" class="outline secondary">Dashboard</a></li>
+                <li><a href="/admin/connections" role="button" class="outline secondary">Connections</a></li>
+                <li><a href="/admin/queries" role="button" class="outline secondary">Queries</a></li>
                 <li><a href="/admin/users" role="button" class="outline secondary">Users</a></li>
                 <li><a href="/admin/logs" role="button" class="outline secondary">Logs</a></li>
             </ul>
