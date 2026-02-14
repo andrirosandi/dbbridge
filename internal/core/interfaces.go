@@ -14,11 +14,20 @@ type UserRepository interface {
 	ValidateApiKey(plainKey string) (*User, error)
 }
 
+type ApiKeyRepository interface {
+	Create(key *ApiKey) error
+	List() ([]ApiKey, error)
+	GetByHash(hash string) (*ApiKey, error)
+	Revoke(id int64) error
+	UpdateLastUsed(id int64) error
+}
+
 // ConnectionRepository defines storage operations for DB connections
 type ConnectionRepository interface {
 	Create(conn *DBConnection) error
 	GetAll() ([]DBConnection, error)
 	GetByID(id int64) (*DBConnection, error)
+	GetByName(name string) (*DBConnection, error)
 	Update(conn *DBConnection) error
 	Delete(id int64) error
 }

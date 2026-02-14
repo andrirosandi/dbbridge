@@ -5,9 +5,11 @@
         <thead>
             <tr>
                 <th scope="col">Time</th>
+                <th scope="col">API Key</th>
                 <th scope="col">Status</th>
-                <th scope="col">Conn ID</th>
-                <th scope="col">Query ID</th>
+                <th scope="col">Connection</th>
+                <th scope="col">Query</th>
+                <th scope="col">Params</th>
                 <th scope="col">Duration (ms)</th>
                 <th scope="col">Error</th>
             </tr>
@@ -17,14 +19,44 @@
             <tr>
                 <td>{{.Timestamp.Format "2006-01-02 15:04:05"}}</td>
                 <td>
+                    {{if .ApiKeyPrefix}}
+                    <span data-tooltip="API Key Used">{{.ApiKeyPrefix}}</span>
+                    {{else}}
+                    <small style="color: #aaa;">-</small>
+                    {{end}}
+                </td>
+                <td>
                     {{if eq .Status "SUCCESS"}}
                     <span style="color: green;">SUCCESS</span>
                     {{else}}
                     <span style="color: red;">ERROR</span>
                     {{end}}
                 </td>
-                <td>{{.ConnectionID}}</td>
-                <td>{{.QueryID}}</td>
+                <td>
+                    {{if .ConnectionName}}
+                    {{.ConnectionName}}
+                    {{else}}
+                    <small>ID: {{.ConnectionID}}</small>
+                    {{end}}
+                </td>
+                <td>
+                    {{if .QuerySlug}}
+                    {{.QuerySlug}}
+                    {{else}}
+                    <small>ID: {{.QueryID}}</small>
+                    {{end}}
+                </td>
+                <td>
+                    {{if .Params}}
+                    <details>
+                        <summary><small>View</small></summary>
+                        <pre
+                            style="font-size: 0.7em; max-width: 200px; overflow: auto; background: none; border: none; padding: 0; margin: 0;">{{.Params}}</pre>
+                    </details>
+                    {{else}}
+                    -
+                    {{end}}
+                </td>
                 <td>{{.DurationMs}}</td>
                 <td>{{if .ErrorMessage}}<small style="color: red;">{{.ErrorMessage}}</small>{{end}}</td>
             </tr>

@@ -21,44 +21,48 @@ import (
 )
 
 type WebHandler struct {
-	connRepo  core.ConnectionRepository
-	queryRepo core.QueryRepository
-	auditRepo core.AuditRepository
-	userRepo  core.UserRepository
-	cryptoSvc *service.EncryptionService
-	templates *template.Template
-	config    *config.Config
-	executor  *service.QueryExecutor
+	connRepo   core.ConnectionRepository
+	queryRepo  core.QueryRepository
+	auditRepo  core.AuditRepository
+	userRepo   core.UserRepository
+	cryptoSvc  *service.EncryptionService
+	templates  *template.Template
+	apiKeyRepo core.ApiKeyRepository
+	authSvc    *service.AuthService
+	config     *config.Config
+	executor   *service.QueryExecutor
 }
 
-func NewWebHandler(connRepo core.ConnectionRepository, queryRepo core.QueryRepository, auditRepo core.AuditRepository, userRepo core.UserRepository, cryptoSvc *service.EncryptionService, cfg *config.Config) *WebHandler {
-	// ... (Template parsing logic remains) ...
+func NewWebHandler(connRepo core.ConnectionRepository, queryRepo core.QueryRepository, auditRepo core.AuditRepository, userRepo core.UserRepository, apiKeyRepo core.ApiKeyRepository, authSvc *service.AuthService, cryptoSvc *service.EncryptionService, cfg *config.Config) *WebHandler {
 	funcMap := template.FuncMap{
-		"hasPrefix": strings.HasPrefix,
+		"add": func(a, b int) int { return a + b },
+		"sub": func(a, b int) int { return a - b },
 	}
-	tmpl, err := template.New("").Funcs(funcMap).ParseGlob("web/templates/*.html")
+
+	tmpl, err := template.New("layout.html").Funcs(funcMap).ParseGlob("web/templates/*.html")
 	if err != nil {
-		logger.Error.Printf("CRITICAL: Failed to parse templates: %v", err)
-		panic(fmt.Errorf("failed to parse templates: %w", err))
+		logger.Error.Fatalf("Failed to parse templates: %v", err)
 	}
 
 	executor := service.NewQueryExecutor(connRepo, queryRepo, auditRepo, cryptoSvc)
 
 	return &WebHandler{
-		connRepo:  connRepo,
-		queryRepo: queryRepo,
-		auditRepo: auditRepo,
-		userRepo:  userRepo,
-		cryptoSvc: cryptoSvc,
-		templates: tmpl,
-		config:    cfg,
-		executor:  executor,
+		connRepo:   connRepo,
+		queryRepo:  queryRepo,
+		auditRepo:  auditRepo,
+		userRepo:   userRepo,
+		cryptoSvc:  cryptoSvc,
+		apiKeyRepo: apiKeyRepo,
+		authSvc:    authSvc,
+		config:     cfg,
+		templates:  tmpl,
+		executor:   executor,
 	}
 }
 
 // ... (Existing handlers) ...
 
-func (h *WebHandler) AuditLogs(w http.ResponseWriter, r *http.Request) {
+func (h *WebHandler) HandleAuditLogs(w http.ResponseWriter, r *http.Request) {
 	logs, err := h.auditRepo.GetRecent(100)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -169,7 +173,7 @@ func (h *WebHandler) SaveConnection(w http.ResponseWriter, r *http.Request) {
 		conn = &core.DBConnection{}
 	}
 
-	conn.Name = name
+	conn.Name = core.Slugify(name)
 	conn.Driver = driver
 	conn.IsActive = isActive
 
@@ -243,26 +247,61 @@ func (h *WebHandler) RunQuery(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	connIDStr := r.FormValue("connection_id")
-	sqlText := r.FormValue("sql_text")
+	var params map[string]interface{}
+	var connID int64
+	var queryID int64
+	var sqlText string
+	var err error
 
-	if connIDStr == "" || sqlText == "" {
-		http.Error(w, "Connection ID and SQL Text are required", http.StatusBadRequest)
-		return
+	// Check content type to handle JSON or Form
+	if strings.HasPrefix(r.Header.Get("Content-Type"), "application/json") {
+		var req struct {
+			ConnectionID int64                  `json:"connection_id"`
+			QueryID      int64                  `json:"query_id"`
+			SQLText      string                 `json:"sql_text"`
+			Params       map[string]interface{} `json:"params"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(map[string]string{"error": "Invalid JSON: " + err.Error()})
+			return
+		}
+		connID = req.ConnectionID
+		queryID = req.QueryID
+		sqlText = req.SQLText
+		params = req.Params // Can be nil
+	} else {
+		// Fallback to Form (existing behavior)
+		connIDStr := r.FormValue("connection_id")
+		queryIDStr := r.FormValue("query_id") // Optional
+		sqlText = r.FormValue("sql_text")
+		if connIDStr == "" || sqlText == "" {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(map[string]string{"error": "Connection ID and SQL Text are required"})
+			return
+		}
+		connID, err = strconv.ParseInt(connIDStr, 10, 64)
+		if err != nil {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(map[string]string{"error": "Invalid Connection ID"})
+			return
+		}
+		if queryIDStr != "" {
+			queryID, _ = strconv.ParseInt(queryIDStr, 10, 64)
+		}
+		// Form doesn't easily support map params without convention.
+		// For now, keep params empty for Form.
+		params = make(map[string]interface{})
 	}
 
-	connID, err := strconv.ParseInt(connIDStr, 10, 64)
-	if err != nil {
-		http.Error(w, "Invalid Connection ID", http.StatusBadRequest)
-		return
+	if params == nil {
+		params = make(map[string]interface{})
 	}
 
-	// For test run, we don't have params from UI yet, or we could accept JSON?
-	// User didn't request params input, so let's pass empty map for now.
-	// If the query has params, it might fail or use defaults if we implemented that.
-	params := make(map[string]interface{})
-
-	result, err := h.executor.ExecuteSQL(r.Context(), connID, sqlText, params)
+	result, err := h.executor.ExecuteSQL(r.Context(), connID, sqlText, params, queryID)
 	if err != nil {
 		// Return JSON error to be friendly to frontend fetch
 		w.Header().Set("Content-Type", "application/json")
@@ -334,7 +373,7 @@ func (h *WebHandler) SaveQuery(w http.ResponseWriter, r *http.Request) {
 	}
 
 	q := &core.SavedQuery{
-		Slug:                 r.FormValue("slug"),
+		Slug:                 core.Slugify(r.FormValue("slug")),
 		Description:          r.FormValue("description"),
 		SQLText:              r.FormValue("sql_text"),
 		IsActive:             r.FormValue("is_active") == "on",
@@ -363,7 +402,7 @@ func (h *WebHandler) DeleteQuery(w http.ResponseWriter, r *http.Request) {
 
 // --- User Management Handlers ---
 
-func (h *WebHandler) UsersList(w http.ResponseWriter, r *http.Request) {
+func (h *WebHandler) HandleListUsers(w http.ResponseWriter, r *http.Request) {
 	users, err := h.userRepo.GetAll()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -375,7 +414,7 @@ func (h *WebHandler) UsersList(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (h *WebHandler) UserForm(w http.ResponseWriter, r *http.Request) {
+func (h *WebHandler) HandleUserForm(w http.ResponseWriter, r *http.Request) {
 	idStr := r.URL.Query().Get("id")
 	data := map[string]interface{}{
 		"IsEdit": false,
@@ -394,7 +433,7 @@ func (h *WebHandler) UserForm(w http.ResponseWriter, r *http.Request) {
 	h.render(w, "user_form.html", data)
 }
 
-func (h *WebHandler) SaveUser(w http.ResponseWriter, r *http.Request) {
+func (h *WebHandler) HandleSaveUser(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
@@ -468,12 +507,60 @@ func (h *WebHandler) SaveUser(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/admin/users", http.StatusFound)
 }
 
-func (h *WebHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
+func (h *WebHandler) HandleDeleteUser(w http.ResponseWriter, r *http.Request) {
 	idStr := r.URL.Query().Get("id")
 	id, _ := strconv.ParseInt(idStr, 10, 64)
 
 	h.userRepo.Delete(id)
 	http.Redirect(w, r, "/admin/users", http.StatusFound)
+}
+
+// API Keys Management
+
+func (h *WebHandler) HandleListApiKeys(w http.ResponseWriter, r *http.Request) {
+	keys, err := h.apiKeyRepo.List()
+	if err != nil {
+		h.render(w, "api_keys.html", map[string]interface{}{"Error": err.Error()})
+		return
+	}
+
+	data := map[string]interface{}{
+		"Title": "API Keys",
+		"Keys":  keys,
+	}
+	h.render(w, "api_keys.html", data)
+}
+
+func (h *WebHandler) HandleCreateApiKey(w http.ResponseWriter, r *http.Request) {
+	userID := int64(1) // Default to admin for now
+	description := r.FormValue("description")
+
+	key, apiKey, err := h.authSvc.GenerateApiKey(userID, description)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	keys, _ := h.apiKeyRepo.List()
+
+	data := map[string]interface{}{
+		"Title":   "API Keys",
+		"Keys":    keys,
+		"NewKey":  key,
+		"NewID":   apiKey.ID,
+		"NewDesc": apiKey.Description,
+	}
+	h.render(w, "api_keys.html", data)
+}
+
+func (h *WebHandler) HandleRevokeApiKey(w http.ResponseWriter, r *http.Request) {
+	idStr := r.FormValue("id")
+	id, _ := strconv.ParseInt(idStr, 10, 64)
+
+	if err := h.apiKeyRepo.Revoke(int64(id)); err != nil {
+		logger.Error.Printf("Failed to revoke key: %v", err)
+	}
+	http.Redirect(w, r, "/admin/api-keys", http.StatusFound)
 }
 
 func (h *WebHandler) render(w http.ResponseWriter, tmplName string, data interface{}) {
@@ -528,14 +615,17 @@ func (h *WebHandler) RegisterRoutes(r chi.Router) {
 	r.Get("/admin/queries/delete", h.DeleteQuery)
 
 	// Users
-	r.Get("/admin/users", h.UsersList)
-	r.Get("/admin/users/new", h.UserForm)
-	r.Get("/admin/users/edit", h.UserForm)
-	r.Post("/admin/users/save", h.SaveUser)
-	r.Get("/admin/users/delete", h.DeleteUser)
+	r.Get("/admin/users", h.HandleListUsers)
+	r.Get("/admin/users/add", h.HandleUserForm)
+	r.Post("/admin/users/save", h.HandleSaveUser)
+	r.Get("/admin/users/delete", h.HandleDeleteUser)
+
+	r.Get("/admin/api-keys", h.HandleListApiKeys)
+	r.Post("/admin/api-keys/create", h.HandleCreateApiKey)
+	r.Post("/admin/api-keys/revoke", h.HandleRevokeApiKey)
 
 	// Audit Logs
-	r.Get("/admin/logs", h.AuditLogs)
+	r.Get("/admin/logs", h.HandleAuditLogs)
 }
 
 func (h *WebHandler) RegisterStatic(r chi.Router) {

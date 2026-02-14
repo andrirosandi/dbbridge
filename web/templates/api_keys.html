@@ -1,0 +1,78 @@
+{{define "api_keys"}}
+<h2>API Keys Management</h2>
+
+<div style="margin-bottom: 20px;">
+    <p>Manage API keys for accessing the DbBridge API programmatically.</p>
+    <form method="POST" action="/admin/api-keys/create" style="display: flex; gap: 10px; align-items: flex-end;">
+        <div style="flex-grow: 1;">
+            <label for="description">Description / Notes</label>
+            <input type="text" id="description" name="description" placeholder="e.g. Mobile App Production" required>
+        </div>
+        <button type="submit" class="contrast" style="width: auto;">Generate New API Key</button>
+    </form>
+</div>
+
+{{if .NewKey}}
+<article style="background-color: #e6ffe6; border-color: #00cc00;">
+    <header><strong>New API Key Generated!</strong></header>
+    <p>Please copy this key now. You will valid not be able to see it again.</p>
+    <pre><code>{{.NewKey}}</code></pre>
+    <div class="grid">
+        <button class="outline" onclick="navigator.clipboard.writeText('{{.NewKey}}')">Copy to Clipboard</button>
+        {{if .NewDesc}}
+        <div><strong>Note:</strong> {{.NewDesc}}</div>
+        {{end}}
+    </div>
+</article>
+{{end}}
+
+<table role="grid">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Prefix</th>
+            <th>Description</th>
+            <th>Created</th>
+            <th>Last Used</th>
+            <th>Status</th>
+            <th>Action</th>
+        </tr>
+    </thead>
+    <tbody>
+        {{range .Keys}}
+        <tr>
+            <td>{{.ID}}</td>
+            <td><code>{{.KeyPrefix}}...</code></td>
+            <td>{{if .Description}}{{.Description}}{{else}}<em style="color:#aaa">No description</em>{{end}}</td>
+            <td>{{.CreatedAt.Format "2006-01-02 15:04"}}</td>
+            <td>
+                {{if .LastUsedAt}}
+                {{.LastUsedAt.Format "2006-01-02 15:04"}}
+                {{else}}
+                <small>Never</small>
+                {{end}}
+            </td>
+            <td>
+                {{if .IsActive}}
+                <span style="color: green;">Active</span>
+                {{else}}
+                <span style="color: red;">Revoked</span>
+                {{end}}
+            </td>
+            <td>
+                {{if .IsActive}}
+                <form method="POST" action="/admin/api-keys/revoke" style="margin:0;">
+                    <input type="hidden" name="id" value="{{.ID}}">
+                    <button type="submit" class="outline secondary"
+                        style="width: auto; padding: 5px 10px; font-size: 0.8rem;"
+                        onclick="return confirm('Are you sure you want to revoke this key?');">Revoke</button>
+                </form>
+                {{else}}
+                -
+                {{end}}
+            </td>
+        </tr>
+        {{end}}
+    </tbody>
+</table>
+{{end}}

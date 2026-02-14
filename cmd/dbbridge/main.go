@@ -59,12 +59,13 @@ func main() {
 	}
 
 	userRepo := data.NewUserRepo(db)
-	authSvc := service.NewAuthService(userRepo)
+	apiKeyRepo := data.NewApiKeyRepo(db)
+	authSvc := service.NewAuthService(userRepo, apiKeyRepo)
 	auditRepo := data.NewAuditRepo(db)
 	queryExecutor := service.NewQueryExecutor(connRepo, queryRepo, auditRepo, cryptoSvc)
 
 	// 6. Initialize Handlers
-	webHandler := api.NewWebHandler(connRepo, queryRepo, auditRepo, userRepo, cryptoSvc, cfg)
+	webHandler := api.NewWebHandler(connRepo, queryRepo, auditRepo, userRepo, apiKeyRepo, authSvc, cryptoSvc, cfg)
 	authHandler := api.NewAuthHandler(authSvc, cfg.DbBridgeKey, webHandler.GetTemplates()) // Helper to share templates? Or just reuse.
 	// To avoid circular dependency or change WebHandler, let's just expose Templates field in WebHandler or pass nil if AuthHandler parses its own?
 	// Better: Init templates in main and pass to both. But WebHandler has logic.
@@ -74,7 +75,9 @@ func main() {
 	// Let's add a getter to WebHandler or make templates public field.
 	// Modifying WebHandler in main:
 
-	apiHandler := api.NewHandler(queryExecutor)
+	// 7. Initialize Handlers
+	docHandler := api.NewDocHandler(queryRepo, connRepo)
+	apiHandler := api.NewHandler(queryExecutor, docHandler, authSvc)
 
 	// 7. Start Server
 	r := chi.NewRouter()

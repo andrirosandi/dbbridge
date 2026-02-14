@@ -57,6 +57,19 @@ func (r *ConnectionRepo) GetByID(id int64) (*core.DBConnection, error) {
 		return nil, err
 	}
 	c.IsActive = isActive == 1
+	c.IsActive = isActive == 1
+	return &c, nil
+}
+
+func (r *ConnectionRepo) GetByName(name string) (*core.DBConnection, error) {
+	var c core.DBConnection
+	var isActive int
+	err := r.db.QueryRow(`SELECT id, name, driver, connection_string_enc, is_active FROM connections WHERE name = ?`, name).
+		Scan(&c.ID, &c.Name, &c.Driver, &c.ConnectionStringEnc, &isActive)
+	if err != nil {
+		return nil, err
+	}
+	c.IsActive = isActive == 1
 	return &c, nil
 }
 

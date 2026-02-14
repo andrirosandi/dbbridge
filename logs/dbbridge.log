@@ -236,3 +236,399 @@ INFO: 2026/02/13 17:06:51 middleware.go:24: POST /admin/connections/test 200 1.4
 INFO: 2026/02/13 17:07:23 main.go:41: Starting DbBridge...
 INFO: 2026/02/13 17:07:23 main.go:113: Server listening on port 8080
 INFO: 2026/02/13 18:03:05 middleware.go:24: GET /images/q.php 404 4.9966ms
+INFO: 2026/02/14 10:11:53 main.go:41: Starting DbBridge...
+INFO: 2026/02/14 10:11:53 main.go:113: Server listening on port 8080
+INFO: 2026/02/14 10:12:51 middleware.go:24: GET / 302 4.4069ms
+INFO: 2026/02/14 10:12:52 middleware.go:24: GET /setup 302 5.3577ms
+INFO: 2026/02/14 10:12:52 middleware.go:24: GET /login 200 2.6987ms
+INFO: 2026/02/14 10:13:17 middleware.go:24: POST /login 302 138.7515ms
+INFO: 2026/02/14 10:13:17 middleware.go:24: GET /admin 200 107.3293ms
+INFO: 2026/02/14 10:13:18 middleware.go:24: GET /static/css/custom.css 304 205.923ms
+INFO: 2026/02/14 10:13:21 middleware.go:24: GET /admin 200 5.6155ms
+INFO: 2026/02/14 10:13:22 middleware.go:24: GET /admin/connections 200 5.9386ms
+INFO: 2026/02/14 10:14:27 middleware.go:24: GET /admin/connections/edit 200 11.552ms
+INFO: 2026/02/14 10:14:29 middleware.go:24: POST /admin/connections/test 400 188.0099ms
+INFO: 2026/02/14 10:14:48 middleware.go:24: POST /admin/connections/test 200 4.0260434s
+INFO: 2026/02/14 10:14:50 middleware.go:24: GET /admin/connections 200 1.2512ms
+INFO: 2026/02/14 10:14:52 middleware.go:24: GET /admin/queries 200 2.3161ms
+INFO: 2026/02/14 10:14:54 middleware.go:24: GET /admin/queries/new 200 12.1348ms
+INFO: 2026/02/14 10:15:15 middleware.go:24: POST /admin/queries/run 200 132.3577ms
+INFO: 2026/02/14 10:25:29 middleware.go:24: POST /admin/queries/run 200 1.0457707s
+INFO: 2026/02/14 10:25:43 main.go:41: Starting DbBridge...
+INFO: 2026/02/14 10:25:43 main.go:113: Server listening on port 8080
+ERROR: 2026/02/14 10:25:43 main.go:115: Server startup failed: listen tcp :8080: bind: Only one usage of each socket address (protocol/network address/port) is normally permitted.
+INFO: 2026/02/14 10:26:04 main.go:41: Starting DbBridge...
+INFO: 2026/02/14 10:26:04 main.go:113: Server listening on port 8080
+INFO: 2026/02/14 10:27:35 middleware.go:24: POST /login 200 9.0379ms
+INFO: 2026/02/14 10:27:45 middleware.go:24: POST /login 200 37.6269ms
+INFO: 2026/02/14 10:27:48 middleware.go:24: POST /admin/connections/save 302 1.558578s
+INFO: 2026/02/14 10:27:49 middleware.go:24: GET /login 200 11.7595ms
+INFO: 2026/02/14 10:27:49 middleware.go:24: POST /admin/queries/save 302 0s
+INFO: 2026/02/14 10:27:49 middleware.go:24: GET /login 200 0s
+INFO: 2026/02/14 10:27:52 middleware.go:24: GET /admin/queries 200 34.2425ms
+INFO: 2026/02/14 10:27:54 middleware.go:24: GET /admin/queries 200 782.6µs
+INFO: 2026/02/14 10:27:55 middleware.go:24: GET /admin/connections 200 8.5859ms
+INFO: 2026/02/14 10:27:57 middleware.go:24: GET /admin/connections 200 1.4539ms
+INFO: 2026/02/14 10:27:57 middleware.go:24: GET /admin/queries 200 1.5704ms
+INFO: 2026/02/14 10:27:59 middleware.go:24: GET /admin/queries 200 107.4221ms
+INFO: 2026/02/14 10:28:00 middleware.go:24: GET /admin/connections 200 609.9µs
+INFO: 2026/02/14 10:28:06 middleware.go:24: POST /login 200 1ms
+INFO: 2026/02/14 10:28:06 middleware.go:24: POST /test-connection-1/test-query-1 404 0s
+INFO: 2026/02/14 10:29:28 middleware.go:24: POST /api/test-conn/test-query 401 4.2599ms
+INFO: 2026/02/14 10:29:28 middleware.go:24: POST /api/test-conn/test-query 401 28.8432ms
+INFO: 2026/02/14 10:31:53 middleware.go:24: GET /admin/connections 200 113.2383ms
+INFO: 2026/02/14 10:31:59 middleware.go:24: GET /admin/connections/edit 200 56.979ms
+INFO: 2026/02/14 10:32:02 middleware.go:24: POST /admin/connections/test 400 139.5399ms
+INFO: 2026/02/14 10:32:06 middleware.go:24: GET /admin/connections 200 2.5302ms
+INFO: 2026/02/14 10:32:08 middleware.go:24: GET /admin/connections/edit 200 2.0445ms
+INFO: 2026/02/14 10:32:11 middleware.go:24: GET /admin/connections 200 3.5376ms
+INFO: 2026/02/14 10:32:13 middleware.go:24: GET /admin/connections/edit 200 7.3752ms
+INFO: 2026/02/14 10:32:16 middleware.go:24: POST /admin/connections/test 200 415.5544ms
+INFO: 2026/02/14 10:32:26 middleware.go:24: GET /admin/connections 200 6.5579ms
+INFO: 2026/02/14 10:32:28 middleware.go:24: GET /admin/queries 200 100.3998ms
+INFO: 2026/02/14 10:32:40 middleware.go:24: GET /admin/queries/edit 200 14.1376ms
+INFO: 2026/02/14 10:32:45 middleware.go:24: GET /admin/queries 200 2.754ms
+INFO: 2026/02/14 10:32:48 middleware.go:24: GET /admin/connections 200 555.3µs
+INFO: 2026/02/14 10:32:49 middleware.go:24: GET /admin/connections/edit 200 3.3369ms
+INFO: 2026/02/14 10:32:52 middleware.go:24: GET /admin/connections 200 7.4533ms
+INFO: 2026/02/14 10:32:54 middleware.go:24: GET /admin/queries 200 1.4972ms
+INFO: 2026/02/14 10:32:55 middleware.go:24: GET /admin/queries/new 200 4.8754ms
+INFO: 2026/02/14 10:38:52 middleware.go:24: POST /admin/queries/run 200 515.6068ms
+INFO: 2026/02/14 10:39:14 middleware.go:24: POST /admin/queries/run 400 133.1458ms
+INFO: 2026/02/14 10:39:33 middleware.go:24: GET /admin/connections 200 43.7307ms
+INFO: 2026/02/14 10:39:36 middleware.go:24: GET /admin/connections/edit 200 11.3264ms
+INFO: 2026/02/14 10:39:43 middleware.go:24: POST /admin/connections/save 302 583.8775ms
+INFO: 2026/02/14 10:39:43 middleware.go:24: GET /admin/connections 200 563.1µs
+INFO: 2026/02/14 10:39:46 middleware.go:24: GET /admin/queries 200 301.1661ms
+INFO: 2026/02/14 10:40:03 middleware.go:24: GET /admin/queries 200 1.7224ms
+INFO: 2026/02/14 10:40:42 middleware.go:24: GET /admin/logs 200 21.5594ms
+INFO: 2026/02/14 10:45:34 main.go:41: Starting DbBridge...
+INFO: 2026/02/14 10:45:34 main.go:113: Server listening on port 8080
+INFO: 2026/02/14 10:46:21 middleware.go:24: GET /admin/logs 200 42.3467ms
+INFO: 2026/02/14 10:46:30 middleware.go:24: GET /admin/users 200 71.9097ms
+INFO: 2026/02/14 10:46:33 middleware.go:24: GET /admin/users/edit 200 6.7482ms
+INFO: 2026/02/14 10:46:36 middleware.go:24: GET /admin/users 200 3.0015ms
+INFO: 2026/02/14 10:47:26 middleware.go:24: POST /admin/queries/run 302 4.7351ms
+INFO: 2026/02/14 10:47:26 middleware.go:24: GET /login 200 1.649ms
+INFO: 2026/02/14 10:49:18 middleware.go:24: POST /login 200 3.994ms
+INFO: 2026/02/14 10:50:24 middleware.go:24: GET /admin/queries 200 60.3973ms
+INFO: 2026/02/14 10:50:28 middleware.go:24: GET /admin/queries/edit 200 9.6086ms
+INFO: 2026/02/14 10:50:49 middleware.go:24: POST /admin/queries/run 400 530.3µs
+INFO: 2026/02/14 10:51:07 middleware.go:24: POST /admin/queries/run 400 0s
+INFO: 2026/02/14 10:52:27 main.go:41: Starting DbBridge...
+INFO: 2026/02/14 10:52:27 main.go:113: Server listening on port 8080
+INFO: 2026/02/14 10:53:23 main.go:41: Starting DbBridge...
+INFO: 2026/02/14 10:53:23 main.go:113: Server listening on port 8080
+INFO: 2026/02/14 10:54:05 middleware.go:24: GET /admin/queries/edit 200 27.7411ms
+INFO: 2026/02/14 10:54:19 middleware.go:24: GET /admin/queries/edit 200 45.672ms
+INFO: 2026/02/14 10:54:33 middleware.go:24: GET /admin/queries/ 404 255.6µs
+INFO: 2026/02/14 10:54:35 middleware.go:24: GET /admin/queries/ 404 0s
+INFO: 2026/02/14 10:54:40 middleware.go:24: GET / 302 566.6µs
+INFO: 2026/02/14 10:54:40 middleware.go:24: GET /setup 302 2.6723ms
+INFO: 2026/02/14 10:54:40 middleware.go:24: GET /login 200 403.4µs
+INFO: 2026/02/14 10:54:47 middleware.go:24: POST /login 302 121.3948ms
+INFO: 2026/02/14 10:54:47 middleware.go:24: GET /admin 200 1.0025ms
+INFO: 2026/02/14 10:54:49 middleware.go:24: GET /admin/queries 200 4.5532ms
+INFO: 2026/02/14 10:54:51 middleware.go:24: GET /admin/queries/edit 200 26.3711ms
+INFO: 2026/02/14 10:55:08 middleware.go:24: POST /admin/queries/run 400 2.007717s
+INFO: 2026/02/14 11:00:53 main.go:41: Starting DbBridge...
+INFO: 2026/02/14 11:00:53 main.go:113: Server listening on port 8080
+INFO: 2026/02/14 11:01:52 middleware.go:24: GET /admin/queries/edit 200 26.3697ms
+INFO: 2026/02/14 11:02:16 middleware.go:24: POST /admin/queries/run 400 575.6688ms
+INFO: 2026/02/14 11:02:21 middleware.go:24: GET /admin/queries/edit 200 15.1446ms
+INFO: 2026/02/14 11:02:25 middleware.go:24: POST /admin/queries/run 400 204.3287ms
+INFO: 2026/02/14 11:02:34 middleware.go:24: POST /admin/queries/run 200 215.3136ms
+INFO: 2026/02/14 11:02:43 middleware.go:24: POST /admin/queries/run 200 167.5859ms
+INFO: 2026/02/14 11:02:50 middleware.go:24: POST /admin/queries/run 200 148.0874ms
+INFO: 2026/02/14 11:07:46 middleware.go:24: POST /admin/queries/run 200 74.2617ms
+INFO: 2026/02/14 11:08:11 middleware.go:24: POST /admin/queries/save 302 76.7518ms
+INFO: 2026/02/14 11:08:11 middleware.go:24: GET /admin/queries 200 26.4673ms
+INFO: 2026/02/14 11:08:14 middleware.go:24: GET /admin/queries/edit 200 13.711ms
+INFO: 2026/02/14 11:08:18 middleware.go:24: POST /admin/queries/save 302 84.5789ms
+INFO: 2026/02/14 11:08:18 middleware.go:24: GET /admin/queries 200 1.0039ms
+INFO: 2026/02/14 11:08:20 middleware.go:24: GET /admin/queries/edit 200 2.2471ms
+INFO: 2026/02/14 11:09:02 middleware.go:24: POST /admin/queries/run 200 86.1668ms
+INFO: 2026/02/14 11:09:23 middleware.go:24: POST /admin/queries/run 200 47.6304ms
+INFO: 2026/02/14 11:09:35 middleware.go:24: POST /admin/queries/run 200 41.915ms
+INFO: 2026/02/14 11:15:02 middleware.go:24: GET /admin/queries/edit 200 20.6852ms
+INFO: 2026/02/14 11:15:06 middleware.go:24: POST /admin/queries/run 400 155.5671ms
+INFO: 2026/02/14 11:15:18 middleware.go:24: POST /admin/queries/run 200 226.3374ms
+INFO: 2026/02/14 11:16:44 main.go:41: Starting DbBridge...
+INFO: 2026/02/14 11:16:44 main.go:113: Server listening on port 8080
+INFO: 2026/02/14 11:17:29 middleware.go:24: GET /admin/queries/edit 200 25.0167ms
+INFO: 2026/02/14 11:17:34 middleware.go:24: GET /admin/queries/edit 200 13.0882ms
+INFO: 2026/02/14 11:24:22 main.go:41: Starting DbBridge...
+INFO: 2026/02/14 11:24:22 main.go:113: Server listening on port 8080
+INFO: 2026/02/14 11:26:29 middleware.go:24: POST /api/ittest/pagination-test 500 28.3172ms
+INFO: 2026/02/14 11:26:29 middleware.go:24: POST /api/ittest/pagination-test 500 35.6255ms
+INFO: 2026/02/14 11:26:43 middleware.go:24: POST /api/ittest/pagination-test 500 2.8824ms
+INFO: 2026/02/14 11:26:43 middleware.go:24: POST /api/ittest/pagination-test 500 6.6174ms
+INFO: 2026/02/14 11:30:42 main.go:41: Starting DbBridge...
+INFO: 2026/02/14 11:30:42 main.go:113: Server listening on port 8080
+INFO: 2026/02/14 11:31:58 middleware.go:24: GET /admin/queries/edit 200 41.5137ms
+INFO: 2026/02/14 11:33:20 middleware.go:24: GET /admin/queries/edit 200 147.1153ms
+INFO: 2026/02/14 11:34:04 main.go:41: Starting DbBridge...
+INFO: 2026/02/14 11:34:04 main.go:113: Server listening on port 8080
+INFO: 2026/02/14 11:35:52 middleware.go:24: GET /admin/queries/edit 200 27.0598ms
+INFO: 2026/02/14 11:36:35 middleware.go:24: GET /admin/queries/edit 302 5.3872ms
+INFO: 2026/02/14 11:36:36 middleware.go:24: GET /login 200 1.0344ms
+INFO: 2026/02/14 11:37:43 main.go:41: Starting DbBridge...
+INFO: 2026/02/14 11:37:43 main.go:113: Server listening on port 8080
+INFO: 2026/02/14 11:38:16 middleware.go:24: GET /admin/queries/edit 200 31.9046ms
+INFO: 2026/02/14 11:38:24 middleware.go:24: POST /admin/queries/run 200 397.6813ms
+INFO: 2026/02/14 11:38:41 middleware.go:24: POST /admin/queries/run 200 854.1578ms
+INFO: 2026/02/14 11:41:33 main.go:41: Starting DbBridge...
+INFO: 2026/02/14 11:41:33 main.go:113: Server listening on port 8080
+INFO: 2026/02/14 11:45:00 main.go:41: Starting DbBridge...
+INFO: 2026/02/14 11:45:00 main.go:113: Server listening on port 8080
+INFO: 2026/02/14 11:45:04 middleware.go:24: POST /admin/queries/run 200 1.4469055s
+INFO: 2026/02/14 11:48:12 main.go:41: Starting DbBridge...
+INFO: 2026/02/14 11:48:12 main.go:113: Server listening on port 8080
+INFO: 2026/02/14 11:49:32 middleware.go:24: GET /admin/queries/edit 200 43.5396ms
+INFO: 2026/02/14 11:49:46 middleware.go:24: POST /admin/queries/run 400 553.6703ms
+INFO: 2026/02/14 11:49:56 middleware.go:24: POST /admin/queries/run 400 483.7675ms
+INFO: 2026/02/14 11:50:13 middleware.go:24: POST /admin/queries/run 200 420.2358ms
+INFO: 2026/02/14 11:50:25 middleware.go:24: POST /admin/queries/run 200 305.9558ms
+INFO: 2026/02/14 11:58:00 middleware.go:24: GET /admin/users 200 528.1844ms
+INFO: 2026/02/14 11:58:02 middleware.go:24: GET /static/css/custom.css 304 148.0697ms
+INFO: 2026/02/14 11:58:48 main.go:41: Starting DbBridge...
+INFO: 2026/02/14 11:58:48 main.go:113: Server listening on port 8080
+INFO: 2026/02/14 11:59:00 middleware.go:24: GET /admin/users 200 109.2171ms
+INFO: 2026/02/14 11:59:09 middleware.go:24: GET /api/docs 401 548.2µs
+INFO: 2026/02/14 11:59:09 middleware.go:24: GET /api/docs 401 12.0247ms
+INFO: 2026/02/14 11:59:15 middleware.go:24: GET /admin/queries 200 15.3049ms
+INFO: 2026/02/14 11:59:18 middleware.go:24: GET /admin/users 200 1.0034ms
+INFO: 2026/02/14 12:00:34 main.go:41: Starting DbBridge...
+ERROR: 2026/02/14 12:00:34 web_handler.go:41: CRITICAL: Failed to parse templates: template: layout.html:37: unterminated quoted string
+INFO: 2026/02/14 12:11:10 main.go:41: Starting DbBridge...
+INFO: 2026/02/14 12:11:10 main.go:113: Server listening on port 8080
+INFO: 2026/02/14 12:12:28 middleware.go:24: GET /admin/users 200 22.9948ms
+INFO: 2026/02/14 12:12:31 middleware.go:24: GET /api/docs 401 0s
+INFO: 2026/02/14 12:12:31 middleware.go:24: GET /api/docs 401 1.1329ms
+INFO: 2026/02/14 12:13:28 main.go:41: Starting DbBridge...
+INFO: 2026/02/14 12:13:28 main.go:113: Server listening on port 8080
+INFO: 2026/02/14 12:14:34 middleware.go:24: GET /api/docs 401 509.9µs
+INFO: 2026/02/14 12:14:34 middleware.go:24: GET /api/docs 401 4.1926ms
+INFO: 2026/02/14 12:14:37 middleware.go:24: GET /admin/users 200 22.3414ms
+INFO: 2026/02/14 12:14:40 middleware.go:24: GET /api/docs 401 0s
+INFO: 2026/02/14 12:14:40 middleware.go:24: GET /api/docs 401 42.5331ms
+INFO: 2026/02/14 12:15:26 middleware.go:24: GET /api/docs 401 0s
+INFO: 2026/02/14 12:15:26 middleware.go:24: GET /api/docs 401 888.8µs
+INFO: 2026/02/14 12:15:28 middleware.go:24: GET /api/docs 401 0s
+INFO: 2026/02/14 12:15:28 middleware.go:24: GET /api/docs 401 71.1322ms
+INFO: 2026/02/14 12:15:29 middleware.go:24: GET /favicon.ico 404 0s
+INFO: 2026/02/14 12:15:44 middleware.go:24: GET /admin/connections 200 102.5243ms
+INFO: 2026/02/14 12:15:47 middleware.go:24: GET /admin/queries 200 48.3871ms
+INFO: 2026/02/14 12:15:52 middleware.go:24: GET /api/docs 401 0s
+INFO: 2026/02/14 12:15:52 middleware.go:24: GET /api/docs 401 59.8648ms
+INFO: 2026/02/14 12:19:47 middleware.go:24: GET /admin/users 200 474.0356ms
+INFO: 2026/02/14 12:19:51 middleware.go:24: GET /admin/logs 200 152.1134ms
+INFO: 2026/02/14 12:21:11 middleware.go:24: GET /admin/queries 200 18.8786ms
+INFO: 2026/02/14 12:21:41 middleware.go:24: GET /admin/queries 200 4.1075ms
+INFO: 2026/02/14 12:21:49 middleware.go:24: GET /admin/queries 200 23.9648ms
+INFO: 2026/02/14 12:21:52 middleware.go:24: GET /admin/users 200 3.9762ms
+INFO: 2026/02/14 12:21:55 middleware.go:24: GET /admin/users/edit 200 23.4193ms
+INFO: 2026/02/14 12:21:59 middleware.go:24: GET /admin/users 200 73.9022ms
+INFO: 2026/02/14 12:22:27 middleware.go:24: GET /api/docs 401 3.5577ms
+INFO: 2026/02/14 12:22:27 middleware.go:24: GET /api/docs 401 4.6715ms
+INFO: 2026/02/14 12:25:23 main.go:41: Starting DbBridge...
+INFO: 2026/02/14 12:25:23 main.go:116: Server listening on port 8080
+INFO: 2026/02/14 12:38:27 middleware.go:24: GET /admin/users 200 202.3567ms
+INFO: 2026/02/14 12:38:31 middleware.go:24: GET /admin/api-keys 200 38.3155ms
+INFO: 2026/02/14 12:39:16 main.go:41: Starting DbBridge...
+INFO: 2026/02/14 12:39:16 main.go:116: Server listening on port 8080
+INFO: 2026/02/14 12:42:50 middleware.go:24: GET /admin/api-keys 200 29.305ms
+INFO: 2026/02/14 12:42:54 middleware.go:24: POST /admin/api-keys/create 200 31.3842ms
+INFO: 2026/02/14 12:45:29 middleware.go:24: GET /api/docs 401 1.9981ms
+INFO: 2026/02/14 12:45:29 middleware.go:24: GET /api/docs 401 11.4846ms
+INFO: 2026/02/14 12:45:37 middleware.go:24: GET /api/docs 401 0s
+INFO: 2026/02/14 12:45:37 middleware.go:24: GET /api/docs 401 12.4404ms
+INFO: 2026/02/14 12:47:15 main.go:41: Starting DbBridge...
+INFO: 2026/02/14 12:47:15 main.go:116: Server listening on port 8080
+INFO: 2026/02/14 12:48:10 middleware.go:24: POST /admin/api-keys/create 500 372.1892ms
+INFO: 2026/02/14 12:48:16 middleware.go:24: GET /admin 200 33.5721ms
+INFO: 2026/02/14 12:48:19 middleware.go:24: GET /admin/api-keys 200 3.999ms
+INFO: 2026/02/14 12:48:36 middleware.go:24: POST /admin/api-keys/create 500 1.1723ms
+INFO: 2026/02/14 12:49:40 main.go:41: Starting DbBridge...
+INFO: 2026/02/14 12:49:40 main.go:116: Server listening on port 8080
+INFO: 2026/02/14 12:52:26 main.go:41: Starting DbBridge...
+INFO: 2026/02/14 12:52:26 main.go:116: Server listening on port 8080
+INFO: 2026/02/14 12:52:46 middleware.go:24: POST /admin/api-keys/create 200 101.1524ms
+INFO: 2026/02/14 12:52:50 middleware.go:24: POST /admin/api-keys/create 200 86.1145ms
+INFO: 2026/02/14 12:54:50 main.go:41: Starting DbBridge...
+INFO: 2026/02/14 12:54:50 main.go:116: Server listening on port 8080
+INFO: 2026/02/14 12:57:19 main.go:41: Starting DbBridge...
+INFO: 2026/02/14 12:57:19 main.go:116: Server listening on port 8080
+INFO: 2026/02/14 12:57:35 middleware.go:24: GET /admin/api-keys/create 405 28.6675ms
+INFO: 2026/02/14 12:57:41 middleware.go:24: GET /admin 200 112.5574ms
+INFO: 2026/02/14 12:57:45 middleware.go:24: GET /api/docs 200 0s
+INFO: 2026/02/14 12:57:45 middleware.go:24: GET /api/docs 200 64.8684ms
+INFO: 2026/02/14 12:57:48 middleware.go:24: GET /api/docs/openapi.json 200 399.599ms
+INFO: 2026/02/14 12:57:48 middleware.go:24: GET /api/docs/openapi.json 200 399.599ms
+INFO: 2026/02/14 12:58:05 middleware.go:24: GET /admin/queries 200 3.5951ms
+INFO: 2026/02/14 12:58:08 middleware.go:24: GET /admin/queries/edit 200 10.085ms
+INFO: 2026/02/14 12:58:31 middleware.go:24: POST /admin/queries/save 302 2.3108575s
+INFO: 2026/02/14 12:58:31 middleware.go:24: GET /admin/queries 200 2.0001ms
+INFO: 2026/02/14 12:58:39 middleware.go:24: GET /admin/queries/edit 200 7.9132ms
+INFO: 2026/02/14 12:58:44 middleware.go:24: GET /api/docs 200 0s
+INFO: 2026/02/14 12:58:44 middleware.go:24: GET /api/docs 200 1.0479ms
+INFO: 2026/02/14 12:58:45 middleware.go:24: GET /api/docs/openapi.json 200 7.4571ms
+INFO: 2026/02/14 12:58:45 middleware.go:24: GET /api/docs/openapi.json 200 8.0634ms
+INFO: 2026/02/14 12:58:52 middleware.go:24: GET /admin/api-keys 200 19.1349ms
+INFO: 2026/02/14 12:58:58 middleware.go:24: POST /admin/api-keys/revoke 302 76.7839ms
+INFO: 2026/02/14 12:58:58 middleware.go:24: GET /admin/api-keys 200 3.0008ms
+INFO: 2026/02/14 12:59:01 middleware.go:24: POST /admin/api-keys/revoke 302 12.3274ms
+INFO: 2026/02/14 12:59:01 middleware.go:24: GET /admin/api-keys 200 1.0371ms
+INFO: 2026/02/14 12:59:04 middleware.go:24: POST /admin/api-keys/revoke 302 27.3409ms
+INFO: 2026/02/14 12:59:04 middleware.go:24: GET /admin/api-keys 200 2.8608ms
+INFO: 2026/02/14 12:59:07 middleware.go:24: POST /admin/api-keys/create 200 21.8821ms
+INFO: 2026/02/14 12:59:22 middleware.go:24: POST /api/ittest/item 200 474.5612ms
+INFO: 2026/02/14 12:59:22 middleware.go:24: POST /api/ittest/item 200 476.9871ms
+INFO: 2026/02/14 13:01:25 middleware.go:24: GET /admin/logs 200 25.4826ms
+INFO: 2026/02/14 13:01:44 main.go:41: Starting DbBridge...
+INFO: 2026/02/14 13:01:44 main.go:116: Server listening on port 8080
+INFO: 2026/02/14 13:01:58 middleware.go:24: GET /api/docs 200 0s
+INFO: 2026/02/14 13:01:58 middleware.go:24: GET /api/docs 200 11.1218ms
+INFO: 2026/02/14 13:02:01 middleware.go:24: GET /api/docs/openapi.json 200 59.9037ms
+INFO: 2026/02/14 13:02:01 middleware.go:24: GET /api/docs/openapi.json 200 61.9653ms
+INFO: 2026/02/14 13:03:30 middleware.go:24: POST /api/ittest/item 200 628.5063ms
+INFO: 2026/02/14 13:03:30 middleware.go:24: POST /api/ittest/item 200 633.312ms
+INFO: 2026/02/14 13:05:35 middleware.go:24: POST /api/ittest/item 200 517.445ms
+INFO: 2026/02/14 13:05:35 middleware.go:24: POST /api/ittest/item 200 538.3854ms
+INFO: 2026/02/14 13:07:16 main.go:41: Starting DbBridge...
+INFO: 2026/02/14 13:07:16 main.go:116: Server listening on port 8080
+INFO: 2026/02/14 13:07:21 middleware.go:24: GET /admin/api-keys 200 210.3716ms
+INFO: 2026/02/14 13:07:58 middleware.go:24: POST /api/ittest/item 200 446.5178ms
+INFO: 2026/02/14 13:07:58 middleware.go:24: POST /api/ittest/item 200 450.022ms
+INFO: 2026/02/14 13:08:10 middleware.go:24: POST /api/ittest/item 200 136.2933ms
+INFO: 2026/02/14 13:08:10 middleware.go:24: POST /api/ittest/item 200 137.4145ms
+INFO: 2026/02/14 13:08:39 middleware.go:24: GET /api/docs 200 0s
+INFO: 2026/02/14 13:08:39 middleware.go:24: GET /api/docs 200 2.3604ms
+INFO: 2026/02/14 13:08:42 middleware.go:24: GET /api/docs/openapi.json 200 22.5875ms
+INFO: 2026/02/14 13:08:42 middleware.go:24: GET /api/docs/openapi.json 200 23.12ms
+INFO: 2026/02/14 13:08:55 middleware.go:24: POST /api/ittest/item 401 585.7µs
+INFO: 2026/02/14 13:08:55 middleware.go:24: POST /api/ittest/item 401 2.2802ms
+INFO: 2026/02/14 13:10:11 middleware.go:24: POST /admin/api-keys/create 200 409.7606ms
+INFO: 2026/02/14 13:10:26 middleware.go:24: POST /api/ittest/item 200 1.2173246s
+INFO: 2026/02/14 13:10:26 middleware.go:24: POST /api/ittest/item 200 1.2194019s
+INFO: 2026/02/14 13:11:08 middleware.go:24: GET /admin/queries 200 4.981ms
+INFO: 2026/02/14 13:11:10 middleware.go:24: GET /admin/queries/edit 200 9.5439ms
+INFO: 2026/02/14 13:11:17 middleware.go:24: POST /admin/queries/run 200 136.343ms
+INFO: 2026/02/14 13:12:25 middleware.go:24: POST /api/ittest/item 200 1.5328379s
+INFO: 2026/02/14 13:12:25 middleware.go:24: POST /api/ittest/item 200 1.5784746s
+INFO: 2026/02/14 13:12:51 main.go:41: Starting DbBridge...
+INFO: 2026/02/14 13:12:51 main.go:116: Server listening on port 8080
+INFO: 2026/02/14 13:13:27 middleware.go:24: POST /admin/queries/save 302 918.5225ms
+INFO: 2026/02/14 13:13:27 middleware.go:24: GET /admin/queries 200 120.7439ms
+INFO: 2026/02/14 13:13:34 middleware.go:24: GET /api/docs 200 781.8µs
+INFO: 2026/02/14 13:13:34 middleware.go:24: GET /api/docs 200 12.2741ms
+INFO: 2026/02/14 13:13:36 middleware.go:24: GET /api/docs/openapi.json 200 28.3943ms
+INFO: 2026/02/14 13:13:36 middleware.go:24: GET /api/docs/openapi.json 200 29.4886ms
+INFO: 2026/02/14 13:13:44 middleware.go:24: GET /api/docs 200 0s
+INFO: 2026/02/14 13:13:44 middleware.go:24: GET /api/docs 200 3.3527ms
+INFO: 2026/02/14 13:13:45 middleware.go:24: GET /api/docs/openapi.json 200 5.9987ms
+INFO: 2026/02/14 13:13:45 middleware.go:24: GET /api/docs/openapi.json 200 43.6983ms
+INFO: 2026/02/14 13:13:57 main.go:41: Starting DbBridge...
+INFO: 2026/02/14 13:13:57 main.go:116: Server listening on port 8080
+INFO: 2026/02/14 13:13:59 middleware.go:24: GET /admin/queries 200 243.6203ms
+INFO: 2026/02/14 13:14:09 middleware.go:24: GET /admin/queries/edit 200 6.0695ms
+INFO: 2026/02/14 13:14:14 middleware.go:24: POST /admin/queries/save 302 78.3583ms
+INFO: 2026/02/14 13:14:14 middleware.go:24: GET /admin/queries 200 2.0676ms
+INFO: 2026/02/14 13:14:18 middleware.go:24: GET /api/docs 200 0s
+INFO: 2026/02/14 13:14:18 middleware.go:24: GET /api/docs 200 4.3989ms
+INFO: 2026/02/14 13:14:19 middleware.go:24: GET /api/docs/openapi.json 200 26.8379ms
+INFO: 2026/02/14 13:14:19 middleware.go:24: GET /api/docs/openapi.json 200 27.8997ms
+INFO: 2026/02/14 13:14:42 middleware.go:24: POST /api/ittest/item 200 215.9302ms
+INFO: 2026/02/14 13:14:42 middleware.go:24: POST /api/ittest/item 200 217.1596ms
+INFO: 2026/02/14 13:15:20 middleware.go:24: GET /admin/queries 200 4.4569ms
+INFO: 2026/02/14 13:17:37 main.go:41: Starting DbBridge...
+INFO: 2026/02/14 13:17:37 main.go:116: Server listening on port 8080
+INFO: 2026/02/14 13:19:26 middleware.go:24: GET /admin/queries/edit 200 73.2126ms
+INFO: 2026/02/14 13:40:23 middleware.go:24: POST /admin/queries/save 302 72.0027ms
+INFO: 2026/02/14 13:40:23 middleware.go:24: GET /admin/queries 200 20.5966ms
+INFO: 2026/02/14 13:40:27 middleware.go:24: GET /admin/queries/edit 200 12.7198ms
+INFO: 2026/02/14 13:40:35 middleware.go:24: POST /admin/queries/run 200 409.0142ms
+INFO: 2026/02/14 13:40:48 middleware.go:24: POST /admin/queries/run 200 397.6043ms
+INFO: 2026/02/14 13:42:12 middleware.go:24: GET /api/docs 200 2.3863ms
+INFO: 2026/02/14 13:42:12 middleware.go:24: GET /api/docs 200 16.1654ms
+INFO: 2026/02/14 13:42:14 middleware.go:24: GET /api/docs/openapi.json 200 19.1892ms
+INFO: 2026/02/14 13:42:14 middleware.go:24: GET /api/docs/openapi.json 200 19.1892ms
+INFO: 2026/02/14 13:42:17 middleware.go:24: GET /api/docs/openapi.json 200 5.5424ms
+INFO: 2026/02/14 13:42:17 middleware.go:24: GET /api/docs/openapi.json 200 34.8189ms
+INFO: 2026/02/14 13:42:17 middleware.go:24: GET /favicon.ico 404 6.3621ms
+INFO: 2026/02/14 13:42:33 main.go:41: Starting DbBridge...
+INFO: 2026/02/14 13:42:33 main.go:116: Server listening on port 8080
+INFO: 2026/02/14 13:43:16 middleware.go:24: GET /admin/queries/edit 200 74.5683ms
+INFO: 2026/02/14 13:43:25 middleware.go:24: GET /admin/queries/edit 200 7.5681ms
+INFO: 2026/02/14 13:43:38 middleware.go:24: GET /admin/queries/edit 200 2.0045ms
+INFO: 2026/02/14 13:43:39 middleware.go:24: GET /static/css/custom.css 200 594.3124ms
+INFO: 2026/02/14 13:43:39 middleware.go:24: GET /favicon.ico 404 28.2472ms
+INFO: 2026/02/14 13:44:43 middleware.go:24: GET /admin/logs 200 171.6836ms
+INFO: 2026/02/14 13:46:31 main.go:41: Starting DbBridge...
+INFO: 2026/02/14 13:46:31 main.go:116: Server listening on port 8080
+INFO: 2026/02/14 13:54:14 middleware.go:24: GET /admin/queries 200 121.9178ms
+INFO: 2026/02/14 13:54:18 middleware.go:24: GET /admin/queries/edit 200 23.6221ms
+INFO: 2026/02/14 13:55:08 middleware.go:24: POST /admin/queries/run 200 950.7634ms
+INFO: 2026/02/14 13:55:53 middleware.go:24: POST /admin/queries/run 400 732.5658ms
+INFO: 2026/02/14 13:56:07 middleware.go:24: POST /admin/queries/run 400 185.4452ms
+INFO: 2026/02/14 13:56:42 middleware.go:24: POST /admin/queries/run 400 249.484ms
+INFO: 2026/02/14 13:58:30 main.go:41: Starting DbBridge...
+INFO: 2026/02/14 13:58:30 main.go:116: Server listening on port 8080
+INFO: 2026/02/14 13:59:12 main.go:41: Starting DbBridge...
+INFO: 2026/02/14 13:59:12 main.go:116: Server listening on port 8080
+INFO: 2026/02/14 13:59:39 middleware.go:24: GET /admin/queries/edit 200 74.5219ms
+INFO: 2026/02/14 13:59:40 middleware.go:24: GET /static/css/custom.css 200 417.5819ms
+INFO: 2026/02/14 13:59:40 middleware.go:24: GET /favicon.ico 404 0s
+INFO: 2026/02/14 14:00:15 middleware.go:24: POST /admin/queries/run 200 635.5982ms
+INFO: 2026/02/14 14:01:12 middleware.go:24: POST /admin/queries/run 200 479.6931ms
+INFO: 2026/02/14 14:01:24 middleware.go:24: GET /admin/api-keys 200 23.4912ms
+INFO: 2026/02/14 14:02:52 main.go:41: Starting DbBridge...
+INFO: 2026/02/14 14:02:52 main.go:116: Server listening on port 8080
+INFO: 2026/02/14 14:11:39 middleware.go:24: GET /admin/api-keys 200 144.872ms
+INFO: 2026/02/14 14:11:46 middleware.go:24: GET /admin/api-keys 200 4.0179ms
+INFO: 2026/02/14 14:11:47 middleware.go:24: GET /static/css/custom.css 200 411.5116ms
+INFO: 2026/02/14 14:11:47 middleware.go:24: GET /favicon.ico 404 3.1662ms
+INFO: 2026/02/14 14:12:41 main.go:41: Starting DbBridge...
+INFO: 2026/02/14 14:12:41 main.go:116: Server listening on port 8080
+INFO: 2026/02/14 14:13:55 middleware.go:24: GET /admin/api-keys 200 36.6306ms
+INFO: 2026/02/14 14:14:24 middleware.go:24: GET /admin/connections 200 5.6568ms
+INFO: 2026/02/14 14:14:28 middleware.go:24: GET /admin/queries 200 73.8437ms
+INFO: 2026/02/14 14:14:32 middleware.go:24: GET /api/docs 200 4.9558ms
+INFO: 2026/02/14 14:14:32 middleware.go:24: GET /api/docs 200 7.9082ms
+INFO: 2026/02/14 14:14:34 middleware.go:24: GET /api/docs/openapi.json 200 25.0278ms
+INFO: 2026/02/14 14:14:34 middleware.go:24: GET /api/docs/openapi.json 200 26.6384ms
+INFO: 2026/02/14 14:14:45 middleware.go:24: GET /api/docs/openapi.json 200 11.9695ms
+INFO: 2026/02/14 14:14:45 middleware.go:24: GET /api/docs/openapi.json 200 14.8586ms
+INFO: 2026/02/14 14:15:25 middleware.go:24: GET /admin 200 3.6796ms
+INFO: 2026/02/14 14:16:44 middleware.go:24: GET /admin 200 6.9056ms
+INFO: 2026/02/14 14:16:53 main.go:41: Starting DbBridge...
+INFO: 2026/02/14 14:16:53 main.go:116: Server listening on port 8080
+INFO: 2026/02/14 14:16:54 middleware.go:24: GET /admin 200 145.3528ms
+INFO: 2026/02/14 14:16:55 middleware.go:24: GET /static/css/custom.css 200 487.0286ms
+INFO: 2026/02/14 14:16:55 middleware.go:24: GET /favicon.ico 404 1.8117ms
+INFO: 2026/02/14 14:17:02 middleware.go:24: GET /admin/logs 200 22.3786ms
+INFO: 2026/02/14 14:21:50 main.go:41: Starting DbBridge...
+INFO: 2026/02/14 14:21:51 main.go:116: Server listening on port 8080
+INFO: 2026/02/14 14:25:04 main.go:41: Starting DbBridge...
+INFO: 2026/02/14 14:25:04 main.go:116: Server listening on port 8080
+INFO: 2026/02/14 14:36:37 middleware.go:24: GET /admin/logs 200 89.0813ms
+INFO: 2026/02/14 14:36:41 middleware.go:24: GET /admin/logs 200 15.541ms
+INFO: 2026/02/14 14:36:53 middleware.go:24: GET /admin/logs 200 21.923ms
+INFO: 2026/02/14 14:36:53 middleware.go:24: GET /static/css/custom.css 200 482.7069ms
+INFO: 2026/02/14 14:36:53 middleware.go:24: GET /favicon.ico 404 0s
+INFO: 2026/02/14 14:37:19 middleware.go:24: GET /admin/queries 200 67.8512ms
+INFO: 2026/02/14 14:37:21 middleware.go:24: GET /admin/queries/edit 200 9.4103ms
+INFO: 2026/02/14 14:37:43 middleware.go:24: POST /admin/queries/run 200 2.5223253s
+INFO: 2026/02/14 14:37:52 middleware.go:24: GET /admin/logs 200 5.8581ms
+INFO: 2026/02/14 14:39:36 main.go:41: Starting DbBridge...
+INFO: 2026/02/14 14:39:37 main.go:116: Server listening on port 8080
+INFO: 2026/02/14 14:45:43 middleware.go:24: GET /admin/logs 200 41.62ms
+INFO: 2026/02/14 14:45:49 middleware.go:24: GET /admin/logs 200 7.9363ms
+INFO: 2026/02/14 14:45:49 middleware.go:24: GET /static/css/custom.css 200 326.9721ms
+INFO: 2026/02/14 14:45:49 middleware.go:24: GET /favicon.ico 404 0s
+INFO: 2026/02/14 14:45:54 middleware.go:24: GET /admin/queries 200 5.6821ms
+INFO: 2026/02/14 14:46:02 middleware.go:24: GET /api/docs 200 0s
+INFO: 2026/02/14 14:46:02 middleware.go:24: GET /api/docs 200 3.3832ms
+INFO: 2026/02/14 14:46:02 middleware.go:24: GET /admin/api-keys 200 10.3554ms
+INFO: 2026/02/14 14:46:03 middleware.go:24: GET /api/docs/openapi.json 200 7.7898ms
+INFO: 2026/02/14 14:46:03 middleware.go:24: GET /api/docs/openapi.json 200 8.3447ms

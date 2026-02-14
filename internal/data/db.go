@@ -2,6 +2,7 @@ package data
 
 import (
 	"database/sql"
+	"fmt"
 	"os"
 	"path/filepath"
 
@@ -101,5 +102,58 @@ func runMigrations(db *sql.DB) error {
 	);
 	`
 	_, err := db.Exec(schema)
-	return err
+	if err != nil {
+		return err
+	}
+
+	// Migration: Add description column if it doesn't exist
+	if !columnExists(db, "api_keys", "description") {
+		_, err := db.Exec(`ALTER TABLE api_keys ADD COLUMN description TEXT;`)
+		if err != nil {
+			return fmt.Errorf("failed to add description column: %w", err)
+		}
+	}
+
+	// Migration: Add api_key_id to audit_logs
+	if !columnExists(db, "audit_logs", "api_key_id") {
+		_, err := db.Exec(`ALTER TABLE audit_logs ADD COLUMN api_key_id INTEGER;`)
+		if err != nil {
+			return fmt.Errorf("failed to add api_key_id column: %w", err)
+		}
+	}
+
+	// Migration: Add params to audit_logs
+	if !columnExists(db, "audit_logs", "params") {
+		_, err := db.Exec(`ALTER TABLE audit_logs ADD COLUMN params TEXT;`)
+		if err != nil {
+			return fmt.Errorf("failed to add params column: %w", err)
+		}
+	}
+
+	return nil
+}
+
+func columnExists(db *sql.DB, tableName, columnName string) bool {
+	query := fmt.Sprintf("PRAGMA table_info(%s)", tableName)
+	rows, err := db.Query(query)
+	if err != nil {
+		return false
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var cid int
+		var name string
+		var ctype string
+		var notnull int
+		var dfltValue interface{}
+		var pk int
+		if err := rows.Scan(&cid, &name, &ctype, &notnull, &dfltValue, &pk); err != nil {
+			return false
+		}
+		if name == columnName {
+			return true
+		}
+	}
+	return false
 }

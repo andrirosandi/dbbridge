@@ -10,7 +10,7 @@
     <link rel="stylesheet" href="/static/css/custom.css">
     <style>
         body {
-            padding-top: 2rem;
+            padding-top: 0.5rem;
         }
 
         nav {
@@ -34,8 +34,13 @@
             <ul>
                 <li><a href="/admin" role="button" class="outline secondary">Dashboard</a></li>
                 <li><a href="/admin/connections" role="button" class="outline secondary">Connections</a></li>
-                <li><a href="/admin/queries" role="button" class="outline secondary">Queries</a></li>
-                <li><a href="/admin/users" role="button" class="outline secondary">Users</a></li>
+                <li><a href="/admin/queries" role="button"
+                        class="outline secondary {{if eq .Path `/admin/queries`}}contrast{{end}}">Queries</a></li>
+                <li><a href="/api/docs" target="_blank" role="button" class="outline secondary">API Docs</a></li>
+                <li><a href="/admin/api-keys" role="button"
+                        class="outline secondary {{if eq .Path `/admin/api-keys`}}contrast{{end}}">API Keys</a></li>
+                <li><a href="/admin/users" role="button"
+                        class="outline secondary {{if eq .Path `/admin/users`}}contrast{{end}}">Users</a></li>
                 <li><a href="/admin/logs" role="button" class="outline secondary">Logs</a></li>
             </ul>
         </nav>
@@ -58,6 +63,8 @@
         {{template "connection_form" .Data}}
         {{else if eq .Page "query_form.html"}}
         {{template "query_form" .Data}}
+        {{else if eq .Page "api_keys.html"}}
+        {{template "api_keys" .Data}}
         {{else}}
         <article>
             <h3>Page Not Found or Not Implemented: {{.Page}}</h3>

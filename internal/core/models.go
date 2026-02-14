@@ -14,13 +14,14 @@ type User struct {
 
 // ... (Other models remain same)
 type ApiKey struct {
-	ID         int64      `json:"id"`
-	UserID     int64      `json:"user_id"`
-	KeyPrefix  string     `json:"key_prefix"`
-	KeyHash    string     `json:"-"`
-	IsActive   bool       `json:"is_active"`
-	LastUsedAt *time.Time `json:"last_used_at"`
-	CreatedAt  time.Time  `json:"created_at"`
+	ID          int64      `json:"id"`
+	UserID      int64      `json:"user_id"`
+	KeyPrefix   string     `json:"key_prefix"`
+	KeyHash     string     `json:"-"`
+	Description string     `json:"description"`
+	IsActive    bool       `json:"is_active"`
+	LastUsedAt  *time.Time `json:"last_used_at"`
+	CreatedAt   time.Time  `json:"created_at"`
 }
 
 type DBConnection struct {
@@ -42,12 +43,17 @@ type SavedQuery struct {
 }
 
 type AuditLog struct {
-	ID           int64     `json:"id"`
-	Timestamp    time.Time `json:"timestamp"`
-	UserID       int64     `json:"user_id"`
-	ConnectionID int64     `json:"connection_id"`
-	QueryID      int64     `json:"query_id"`
-	DurationMs   int64     `json:"duration_ms"`
-	Status       string    `json:"status"`
-	ErrorMessage string    `json:"error_message"`
+	ID             int64     `json:"id"`
+	Timestamp      time.Time `json:"timestamp"`
+	UserID         int64     `json:"user_id"`
+	ApiKeyID       *int64    `json:"api_key_id"`     // Nullable
+	ApiKeyPrefix   string    `json:"api_key_prefix"` // Display only
+	ConnectionID   int64     `json:"connection_id"`
+	ConnectionName string    `json:"connection_name"` // Display only
+	QueryID        int64     `json:"query_id"`
+	QuerySlug      string    `json:"query_slug"` // Display only
+	Params         string    `json:"params"`     // JSON string
+	DurationMs     int64     `json:"duration_ms"`
+	Status         string    `json:"status"`
+	ErrorMessage   string    `json:"error_message"`
 }

@@ -19,28 +19,66 @@
     <label for="sql_text">SQL Query</label>
     <textarea id="sql_text" name="sql_text" rows="5" required
         placeholder="SELECT * FROM users WHERE id = :id">{{.Query.SQLText}}</textarea>
-    <small>Use <code>:param_name</code> for parameters.</small>
+    <small>Use <code>{param_name}</code> for parameters.</small>
+
+    <details
+        style="margin-top: 10px; background-color: var(--card-sectionning-background-color); padding: 10px; border-radius: var(--border-radius);">
+        <summary><strong>Variable Dictionary / Cheat Sheet</strong></summary>
+        <p>You can use the following dynamic variables in your SQL:</p>
+        <ul style="font-size: 0.9em;">
+            <li><code>{param}</code> - Standard parameter. User will be prompted to enter a value.</li>
+            <li><code>{status:active}</code> - Parameter with <strong>default value</strong> 'active'.</li>
+            <li><code>{pagination}</code> - Adds <code>LIMIT/OFFSET</code> logic automatically. Controls
+                <code>_page</code> and <code>_limit</code>.
+            </li>
+            <li><code>{pagination:1:20}</code> - Pagination with custom default (Page 1, Limit 20).</li>
+            <li><code>{pagination::100}</code> - Pagination with default Limit 100.</li>
+            <li><code>{ids}</code> - Arrays/Lists are supported! <code>IN ({ids})</code> expands automatically to
+                <code>IN (?, ?, ?)</code>.
+                <ul>
+                    <li><strong>UI Input:</strong> Type as JSON string: <code>[1, 2, 3]</code> or
+                        <code>["a", "b"]</code>
+                    </li>
+                    <li><strong>API JSON:</strong> Send as actual array: <code>"ids": [1, 2, 3]</code></li>
+                </ul>
+            </li>
+        </ul>
+        <small><strong>Note:</strong> JSON body parameters <code>_page</code> and <code>_limit</code> override
+            defaults.</small>
+    </details>
 
     <div style="margin-top: 1rem;">
         <label>Allowed Connections</label>
-        <div class="grid" style="grid-template-columns: 1fr; gap: 20px;">
-            {{range .Connections}}
-            <div class="connection-item" style="border: 1px solid #ccc; padding: 10px; border-radius: 5px;">
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <label style="margin-bottom: 0;">
-                        <input type="checkbox" name="connection_ids" value="{{.ID}}" {{if $.IsEdit}} {{range
-                            $.Query.AllowedConnectionIDs}} {{if eq . $.ID}}checked{{end}} {{end}} {{end}}>
-                        {{.Name}} ({{.Driver}})
-                    </label>
-                    <button type="button" class="outline" onclick="runQuery({{.ID}}, 'result-{{.ID}}')"
-                        style="width: auto; padding: 5px 15px; font-size: 0.8rem;">
-                        ▶ Run
-                    </button>
-                </div>
-                <!-- Result Container -->
-                <div id="result-{{.ID}}" style="margin-top: 10px; overflow-x: auto; display: none;"></div>
-            </div>
-            {{end}}
+        <div class="grid" style="grid-template-columns: 1fr; gap: 10px;">
+            <table role="grid">
+                <thead>
+                    <tr>
+                        <th>Select</th>
+                        <th>Connection</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{range .Connections}}
+                    {{$connID := .ID}}
+                    <tr>
+                        <td>
+                            <input type="checkbox" name="connection_ids" value="{{.ID}}" {{if $.IsEdit}} {{range
+                                $.Query.AllowedConnectionIDs}} {{if eq . $connID}}checked{{end}} {{end}} {{end}}>
+                        </td>
+                        <td>
+                            {{.Name}} <small>({{.Driver}})</small>
+                        </td>
+                        <td>
+                            <button type="button" class="outline" onclick="runQuery({{.ID}}, '{{.Name}}')"
+                                style="width: auto; padding: 5px 15px; font-size: 0.8rem;">
+                                ▶ Run
+                            </button>
+                        </td>
+                    </tr>
+                    {{end}}
+                </tbody>
+            </table>
         </div>
         <small>Select which databases this query can be executed against.</small>
     </div>
@@ -63,6 +101,40 @@
     </div>
 </form>
 
+<hr />
+
+<!-- Global Result Container -->
+<div id="query-result-section" style="display: none; margin-top: 20px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+        <h3 id="result-header" style="margin-bottom: 0;">Query Result</h3>
+        <!-- Pagination Controls -->
+        <div id="pagination-controls" style="display: none; gap: 10px; align-items: center;">
+            <button type="button" class="outline" onclick="changePage(-1)" id="btn-prev" disabled>Previous</button>
+            <span id="page-indicator">Page 1</span>
+            <button type="button" class="outline" onclick="changePage(1)" id="btn-next">Next</button>
+            <small style="margin-left: 10px;">(Limit: <span id="limit-indicator">50</span>)</small>
+        </div>
+    </div>
+    <div id="global-result" style="overflow-x: auto;"></div>
+</div>
+
+<!-- Params Modal -->
+<dialog id="params-modal">
+    <article>
+        <h3>Enter Parameters</h3>
+        <p>This query requires the following parameters:</p>
+        <form id="params-form">
+            <div id="modal-inputs" class="grid" style="grid-template-columns: 1fr; gap: 10px;">
+                <!-- Inputs generated via JS -->
+            </div>
+            <footer>
+                <a href="#cancel" role="button" class="secondary" onclick="closeModal()">Cancel</a>
+                <a href="#confirm" role="button" id="confirm-run">Run Query</a>
+            </footer>
+        </form>
+    </article>
+</dialog>
+
 <!-- CodeMirror JS -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/sql/sql.min.js"></script>
@@ -78,26 +150,186 @@
     });
     editor.setSize(null, 400); // Height
 
-    async function runQuery(connID, resultDivID) {
-        const sql = editor.getValue();
-        const resultDiv = document.getElementById(resultDivID);
+    // Modal Elements
+    const modal = document.getElementById('params-modal');
+    const modalForm = document.getElementById('params-form');
+    const modalInputs = document.getElementById('modal-inputs');
+    let currentConnID = null;
+    let currentConnName = "";
+    let lastParams = {}; // Store last used params for pagination re-runs
 
+    // Result Elements
+    const resultSection = document.getElementById('query-result-section');
+    const resultHeader = document.getElementById('result-header');
+    const resultDiv = document.getElementById('global-result');
+
+    // Pagination Elements & State
+    const paginationControls = document.getElementById('pagination-controls');
+    const btnPrev = document.getElementById('btn-prev');
+    const btnNext = document.getElementById('btn-next');
+    const pageIndicator = document.getElementById('page-indicator');
+    const limitIndicator = document.getElementById('limit-indicator');
+
+    let currentPage = 1;
+    let currentLimit = 50;
+    let isPaginationActive = false;
+
+    function closeModal() {
+        modal.open = false;
+    }
+
+    async function runQuery(connID, connName) {
+        const sql = editor.getValue();
         if (!sql) {
             alert("Please enter a SQL query first.");
             return;
         }
 
-        resultDiv.style.display = 'block';
-        resultDiv.innerHTML = '<small>Running...</small>';
+        // Reset Pagination State
+        currentPage = 1;
+        currentLimit = 50; // Default Global
+        isPaginationActive = false;
+
+        // Check for Pagination Syntax to Initialize Defaults
+        // Regex: {pagination} or {pagination:P:L}
+        const pagRegex = /\{\s*pagination(?::\s*(\d*)\s*:\s*(\d*)\s*)?\}/;
+        const pagMatch = pagRegex.exec(sql);
+        if (pagMatch) {
+            isPaginationActive = true;
+            // Parse defaults from SQL if present
+            // pagMatch[1] = page, pagMatch[2] = limit
+            if (pagMatch[1]) {
+                const p = parseInt(pagMatch[1]);
+                if (!isNaN(p) && p > 0) currentPage = p;
+            }
+            if (pagMatch[2]) {
+                const l = parseInt(pagMatch[2]);
+                if (!isNaN(l) && l > 0) currentLimit = l;
+            }
+        }
+
+        // 1. Detect Params using Regex matching ParseResult logic
+        // Exclude pagination matching
+        const regex = /\{\s*((?!pagination)[a-zA-Z0-9_]+)(?::([^}]+))?\s*\}/g;
+        let match;
+        const params = new Map();
+
+        while ((match = regex.exec(sql)) !== null) {
+            const name = match[1];
+            const defFull = match[2] ? match[2].trim() : "";
+            if (!params.has(name) || (defFull !== "" && params.get(name) === "")) {
+                params.set(name, defFull);
+            }
+        }
+
+        if (params.size > 0) {
+            currentConnID = connID;
+            currentConnName = connName;
+
+            modalInputs.innerHTML = '';
+            params.forEach((defaultValue, param) => {
+                const div = document.createElement('div');
+                div.innerHTML = `
+                    <label for="param-${param}">${param}</label>
+                    <input type="text" id="param-${param}" name="${param}" value="${defaultValue}" required>
+                `;
+                modalInputs.appendChild(div);
+            });
+
+            modal.open = true;
+            return;
+        }
+
+        // No params, run directly
+        executeRun(connID, connName, {});
+    }
+
+    // Pagination Handler
+    function changePage(delta) {
+        if (!isPaginationActive) return;
+        const newPage = currentPage + delta;
+        if (newPage < 1) return;
+
+        currentPage = newPage;
+        executeRun(currentConnID, currentConnName, lastParams);
+    }
+
+    // Handle Modal Submit via Button
+    document.getElementById('confirm-run').addEventListener('click', (e) => {
+        e.preventDefault();
+        submitModal();
+    });
+
+    // Handle Enter key in Modal Form
+    modalForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        submitModal();
+    });
+
+    function submitModal() {
+        // Collect params
+        const params = {};
+        const inputs = modalInputs.querySelectorAll('input');
+        let valid = true;
+        inputs.forEach(input => {
+            if (!input.value) valid = false;
+            params[input.name] = input.value;
+        });
+
+        if (!valid) {
+            alert("Please fill all parameters");
+            return;
+        }
+
+        closeModal();
+        executeRun(currentConnID, currentConnName, params);
+    }
+
+    async function executeRun(connID, connName, params) {
+        currentConnID = connID; // Ensure updated for pagination
+        currentConnName = connName;
+        lastParams = { ...params }; // Copy params for pagination re-runs
+
+        const sql = editor.getValue();
+
+        resultSection.style.display = 'block';
+        resultHeader.innerText = `Query Result (Connection: ${connName})`;
+        resultDiv.innerHTML = '<div aria-busy="true">Running query...</div>';
+
+        // Update Pagination UI
+        if (isPaginationActive) {
+            paginationControls.style.display = 'flex';
+            pageIndicator.innerText = `Page ${currentPage}`;
+            limitIndicator.innerText = currentLimit;
+            btnPrev.disabled = currentPage <= 1;
+
+            // Inject _page and _limit
+            params['_page'] = currentPage;
+            params['_limit'] = currentLimit;
+        } else {
+            paginationControls.style.display = 'none';
+        }
+
+        // Scroll (optional, maybe annoying if clicking next/prev repeatedly)
+        // resultSection.scrollIntoView({ behavior: 'smooth' });
 
         try {
-            const formData = new FormData();
-            formData.append('connection_id', connID);
-            formData.append('sql_text', sql);
+            // Use JSON for params support
+            const payload = {
+                connection_id: parseInt(connID),
+                // Query ID might be in .Query.ID if injected, but here we are in a JS function.
+                // We need to access the input hidden field "id" if it exists.
+                query_id: document.querySelector('input[name="id"]') ? parseInt(document.querySelector('input[name="id"]').value) : 0,
+                sql_text: sql,
+                params: params
+            };
 
             const response = await fetch('/admin/queries/run', {
                 method: 'POST',
-                body: formData
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload)
             });
 
             const data = await response.json();
@@ -108,7 +340,7 @@
 
             // Render Table
             if (!data.rows || data.rows.length === 0) {
-                resultDiv.innerHTML = '<small>No results found or query executed successfully.</small>';
+                resultDiv.innerHTML = '<small>No results found.</small>';
                 return;
             }
 
@@ -130,7 +362,7 @@
             resultDiv.innerHTML = html;
 
         } catch (e) {
-            resultDiv.innerHTML = `<small style="color: red;">Error: ${e.message}</small>`;
+            resultDiv.innerHTML = `<article style="background-color: #ffe6e6; color: #cc0000; border: 1px solid #cc0000;"><strong>Error:</strong> ${e.message}</article>`;
         }
     }
 </script>
