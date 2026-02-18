@@ -24,6 +24,12 @@
                 data-template="file:test.db?cache=shared&mode=rwc">SQLite (Native)</option>
         </optgroup>
         <optgroup label="ODBC">
+            <option value="help_sa12" data-driver="odbc"
+                data-template="Driver={SQL Anywhere 12};ServerName=server_name;Uid=dba;Pwd=sql;Host=localhost:2638;">
+                Sybase SQL Anywhere 12 (Helper)</option>
+            <option value="help_sa17" data-driver="odbc"
+                data-template="Driver={SQL Anywhere 17};ServerName=server_name;Uid=dba;Pwd=sql;Host=localhost:2638;">
+                Sybase SQL Anywhere 17 (Helper)</option>
             <option value="odbc" {{if eq .Connection.Driver "odbc" }}selected{{end}}
                 data-template="Driver={SQL Anywhere 10};Uid=dba;Pwd=sql;EngineName=demo;">Sybase SQL
                 Anywhere (ODBC)</option>
@@ -120,7 +126,10 @@
         const connStrInput = document.getElementById('connection_string');
 
         if (selectedOption.value) {
-            driverInput.value = selectedOption.value;
+            // Use data-driver if available (for helpers), otherwise value
+            const realDriver = selectedOption.getAttribute('data-driver') || selectedOption.value;
+            driverInput.value = realDriver;
+
             // Only autofill if empty or user explicitly changed preset (logic can be improved)
             // For now, we prefer not to overwrite existing data if editing, unless user explicitly changes preset?
             // Actually user request is "di klik maka akan muncul default".
