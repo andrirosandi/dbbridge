@@ -87,8 +87,49 @@ func (h *WebHandler) ReloadTemplates() {
 }
 
 func (h *WebHandler) Dashboard(w http.ResponseWriter, r *http.Request) {
+	// 1. Logs
+	logs, err := h.auditRepo.GetRecent(5)
+	if err != nil {
+		logger.Error.Printf("Dashboard: Failed to get logs: %v", err)
+	}
+
+	// 2. Connections
+	conns, err := h.connRepo.GetAll()
+	activeConns := 0
+	if err == nil {
+		for _, c := range conns {
+			if c.IsActive {
+				activeConns++
+			}
+		}
+	}
+
+	// 3. Queries
+	queries, err := h.queryRepo.GetAll()
+	activeQueries := 0
+	if err == nil {
+		for _, q := range queries {
+			if q.IsActive {
+				activeQueries++
+			}
+		}
+	}
+
+	// 4. Users
+	users, err := h.userRepo.GetAll()
+	userCount := 0
+	if err == nil {
+		userCount = len(users)
+	}
+
 	h.render(w, "dashboard.html", map[string]interface{}{
-		"Title": "Dashboard",
+		"Title":         "Dashboard",
+		"Logs":          logs,
+		"TotalConns":    len(conns),
+		"ActiveConns":   activeConns,
+		"TotalQueries":  len(queries),
+		"ActiveQueries": activeQueries,
+		"TotalUsers":    userCount,
 	})
 }
 

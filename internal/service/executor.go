@@ -126,11 +126,7 @@ func (e *QueryExecutor) ExecuteSQL(ctx context.Context, connectionID int64, sqlT
 
 	// 3. Parse SQL parameters
 	// Check for system variables like {pagination}
-	sqlText = e.processSystemVariables(sqlText, connDetails.Driver, params)
-
-	// 3. Parse SQL parameters
-	// Check for system variables like {pagination}
-	sqlText = e.processSystemVariables(sqlText, connDetails.Driver, params)
+	sqlText = e.processSystemVariables(sqlText, connDetails.Driver, params, decryptedConnStr)
 
 	parseResult := e.parseSQL(sqlText, params)
 
@@ -209,7 +205,7 @@ func (e *QueryExecutor) parseSQL(sqlText string, params map[string]interface{}) 
 	return e.parser.Parse(sqlText, params)
 }
 
-func (e *QueryExecutor) processSystemVariables(sqlText string, driver string, params map[string]interface{}) string {
+func (e *QueryExecutor) processSystemVariables(sqlText string, driver string, params map[string]interface{}, connStr string) string {
 	// Regex to match {pagination}, {pagination:1:20}, {pagination::20}, {pagination:2:}
 	// Case insensitive due to (?i)
 	re := regexp.MustCompile(`(?i)\{\s*pagination(?::\s*(\d*)\s*:\s*(\d*)\s*)?\}`)
@@ -281,8 +277,19 @@ func (e *QueryExecutor) processSystemVariables(sqlText string, driver string, pa
 	case "mysql":
 		replacement = fmt.Sprintf("LIMIT %d, %d", offset, limit)
 	case "odbc", "mssql":
-		// Assuming SQL Anywhere / Sybase compatible syntax for ODBC
-		replacement = fmt.Sprintf("TOP %d START AT %d", limit, offset+1)
+		// Detect if it is Sybase / SQL Anywhere based on Connection String
+		// SQL Anywhere drivers usually contain "SQL Anywhere" or "ASA"
+		isSybase := strings.Contains(strings.ToLower(connStr), "sql anywhere") ||
+			strings.Contains(strings.ToLower(connStr), "asa")
+
+		if isSybase {
+			replacement = fmt.Sprintf("TOP %d START AT %d", limit, offset+1)
+		} else {
+			// Default to LIMIT OFFSET for other ODBC (Postgres, MySQL, etc.)
+			// Assuming most modern SQL/ODBC drivers support LIMIT/OFFSET or similar enough
+			// If not, we might need more specific detection
+			replacement = fmt.Sprintf("LIMIT %d OFFSET %d", limit, offset)
+		}
 	default:
 		replacement = fmt.Sprintf("LIMIT %d OFFSET %d", limit, offset)
 	}

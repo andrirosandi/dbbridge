@@ -1,16 +1,47 @@
 {{define "dashboard"}}
+<h3>System Overview</h3>
+<div class="grid">
+    <article>
+        <header>Active Connections</header>
+        <h2>{{.ActiveConns}} <small>/ {{.TotalConns}}</small></h2>
+    </article>
+    <article>
+        <header>Active Queries</header>
+        <h2>{{.ActiveQueries}} <small>/ {{.TotalQueries}}</small></h2>
+    </article>
+    <article>
+        <header>Registered Users</header>
+        <h2>{{.TotalUsers}}</h2>
+    </article>
+</div>
+
 <article>
-    <header>Server Status</header>
-    <div class="grid">
-        <div>
-            <h3>Active</h3>
-            <p>System is running normally.</p>
-        </div>
-        <div>
-            <h3>Uptime</h3>
-            <p>--</p> <!-- TODO: Add uptime logic -->
-        </div>
-    </div>
+    <header>Recent Activity</header>
+    <table role="grid">
+        <thead>
+            <tr>
+                <th>Time</th>
+                <th>User / API</th>
+                <th>Action</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{range .Logs}}
+            <tr>
+                <td>{{.Timestamp.Format "2006-01-02 15:04"}}</td>
+                <td>{{if .ApiKeyPrefix}}API: {{.ApiKeyPrefix}}{{else}}User #{{.UserID}}{{end}}</td>
+                <td>{{if .QuerySlug}}{{.QuerySlug}} on {{.ConnectionName}}{{else}}-{{end}}</td>
+                <td>{{if eq .Status "SUCCESS"}}<ins>OK</ins>{{else}}<mark>ERR</mark>{{end}}</td>
+            </tr>
+            {{else}}
+            <tr>
+                <td colspan="4" style="text-align:center">No recent activity.</td>
+            </tr>
+            {{end}}
+        </tbody>
+    </table>
+    <p style="text-align:right"><a href="/admin/logs">View All Logs &rarr;</a></p>
 </article>
 
 <div class="grid">
