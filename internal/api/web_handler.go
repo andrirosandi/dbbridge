@@ -17,20 +17,22 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/gorilla/sessions"
 	"golang.org/x/crypto/bcrypt"
 )
 
 type WebHandler struct {
-	connRepo   core.ConnectionRepository
-	queryRepo  core.QueryRepository
-	auditRepo  core.AuditRepository
-	userRepo   core.UserRepository
-	cryptoSvc  *service.EncryptionService
-	templates  *template.Template
-	apiKeyRepo core.ApiKeyRepository
-	authSvc    *service.AuthService
-	config     *config.Config
-	executor   *service.QueryExecutor
+	connRepo     core.ConnectionRepository
+	queryRepo    core.QueryRepository
+	auditRepo    core.AuditRepository
+	userRepo     core.UserRepository
+	cryptoSvc    *service.EncryptionService
+	templates    *template.Template
+	apiKeyRepo   core.ApiKeyRepository
+	authSvc      *service.AuthService
+	config       *config.Config
+	executor     *service.QueryExecutor
+	sessionStore *sessions.CookieStore
 }
 
 func NewWebHandler(connRepo core.ConnectionRepository, queryRepo core.QueryRepository, auditRepo core.AuditRepository, userRepo core.UserRepository, apiKeyRepo core.ApiKeyRepository, authSvc *service.AuthService, cryptoSvc *service.EncryptionService, cfg *config.Config) *WebHandler {
@@ -46,17 +48,21 @@ func NewWebHandler(connRepo core.ConnectionRepository, queryRepo core.QueryRepos
 
 	executor := service.NewQueryExecutor(connRepo, queryRepo, auditRepo, cryptoSvc)
 
+	// Create session store with the same key as AuthHandler
+	store := sessions.NewCookieStore([]byte(cfg.DbBridgeKey))
+
 	return &WebHandler{
-		connRepo:   connRepo,
-		queryRepo:  queryRepo,
-		auditRepo:  auditRepo,
-		userRepo:   userRepo,
-		cryptoSvc:  cryptoSvc,
-		apiKeyRepo: apiKeyRepo,
-		authSvc:    authSvc,
-		config:     cfg,
-		templates:  tmpl,
-		executor:   executor,
+		connRepo:     connRepo,
+		queryRepo:    queryRepo,
+		auditRepo:    auditRepo,
+		userRepo:     userRepo,
+		cryptoSvc:    cryptoSvc,
+		apiKeyRepo:   apiKeyRepo,
+		authSvc:      authSvc,
+		config:       cfg,
+		templates:    tmpl,
+		executor:     executor,
+		sessionStore: store,
 	}
 }
 
@@ -441,119 +447,94 @@ func (h *WebHandler) DeleteQuery(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/admin/queries", http.StatusFound)
 }
 
-// --- User Management Handlers ---
+// --- My Profile Handlers ---
 
-func (h *WebHandler) HandleListUsers(w http.ResponseWriter, r *http.Request) {
-	users, err := h.userRepo.GetAll()
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+func (h *WebHandler) HandleProfile(w http.ResponseWriter, r *http.Request) {
+	session, _ := h.sessionStore.Get(r, "dbbridge-session")
+	userID, _ := session.Values["user_id"].(int64)
+	username, _ := session.Values["username"].(string)
+
+	// Check for flash messages
+	successMsg := ""
+	errorMsg := ""
+	if msg, ok := session.Values["flash_success"].(string); ok && msg != "" {
+		successMsg = msg
+		delete(session.Values, "flash_success")
+		session.Save(r, w)
 	}
-	h.render(w, "users.html", map[string]interface{}{
-		"Title": "Users",
-		"Users": users,
+	if msg, ok := session.Values["flash_error"].(string); ok && msg != "" {
+		errorMsg = msg
+		delete(session.Values, "flash_error")
+		session.Save(r, w)
+	}
+
+	h.render(w, "profile.html", map[string]interface{}{
+		"Title":    "My Profile",
+		"UserID":   userID,
+		"Username": username,
+		"Success":  successMsg,
+		"Error":    errorMsg,
 	})
 }
 
-func (h *WebHandler) HandleUserForm(w http.ResponseWriter, r *http.Request) {
-	idStr := r.URL.Query().Get("id")
-	data := map[string]interface{}{
-		"IsEdit": false,
-		"User":   core.User{},
+func (h *WebHandler) HandleUpdatePassword(w http.ResponseWriter, r *http.Request) {
+	session, _ := h.sessionStore.Get(r, "dbbridge-session")
+	userID, _ := session.Values["user_id"].(int64)
+
+	currentPassword := r.FormValue("current_password")
+	newPassword := r.FormValue("new_password")
+	confirmPassword := r.FormValue("confirm_password")
+
+	// Validate
+	if newPassword == "" {
+		session.Values["flash_error"] = "New password is required."
+		session.Save(r, w)
+		http.Redirect(w, r, "/admin/profile", http.StatusFound)
+		return
 	}
-
-	if idStr != "" {
-		id, _ := strconv.ParseInt(idStr, 10, 64)
-		user, err := h.userRepo.GetByID(id)
-		if err == nil {
-			data["IsEdit"] = true
-			data["User"] = user
-		}
-	}
-
-	h.render(w, "user_form.html", data)
-}
-
-func (h *WebHandler) HandleSaveUser(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+	if newPassword != confirmPassword {
+		session.Values["flash_error"] = "New passwords do not match."
+		session.Save(r, w)
+		http.Redirect(w, r, "/admin/profile", http.StatusFound)
 		return
 	}
 
-	err := r.ParseForm()
+	// Verify current password
+	user, err := h.userRepo.GetByID(userID)
 	if err != nil {
-		http.Error(w, "Failed to parse form", http.StatusBadRequest)
+		session.Values["flash_error"] = "User not found."
+		session.Save(r, w)
+		http.Redirect(w, r, "/admin/profile", http.StatusFound)
 		return
 	}
 
-	idStr := r.FormValue("id")
-	username := r.FormValue("username")
-	password := r.FormValue("password")
-	isActive := r.FormValue("is_active") == "on"
-
-	if idStr != "" {
-		// Update
-		id, _ := strconv.ParseInt(idStr, 10, 64)
-		user, err := h.userRepo.GetByID(id)
-		if err != nil {
-			http.Error(w, "User not found", http.StatusNotFound)
-			return
-		}
-
-		user.Username = username
-		user.IsActive = isActive
-
-		if password != "" {
-			hashedValue, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
-			if err != nil {
-				http.Error(w, "Encryption failed", http.StatusInternalServerError)
-				return
-			}
-			user.PasswordHash = string(hashedValue)
-		} else {
-			user.PasswordHash = "" // Clear it so Repo doesn't update it
-		}
-
-		if err := h.userRepo.Update(user); err != nil {
-			http.Error(w, "Failed to update user: "+err.Error(), http.StatusInternalServerError)
-			return
-		}
-	} else {
-		// Create
-		if password == "" {
-			http.Error(w, "Password is required", http.StatusBadRequest)
-			return
-		}
-
-		hashedValue, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
-		if err != nil {
-			http.Error(w, "Encryption failed", http.StatusInternalServerError)
-			return
-		}
-
-		user, err := h.userRepo.CreateUser(username, string(hashedValue))
-		if err != nil {
-			http.Error(w, "Failed to create user: "+err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		// Sync IsActive if different from default (true)
-		if !isActive {
-			user.IsActive = false
-			user.PasswordHash = "" // Dont update password hash again
-			h.userRepo.Update(user)
-		}
+	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(currentPassword)); err != nil {
+		session.Values["flash_error"] = "Current password is incorrect."
+		session.Save(r, w)
+		http.Redirect(w, r, "/admin/profile", http.StatusFound)
+		return
 	}
 
-	http.Redirect(w, r, "/admin/users", http.StatusFound)
-}
+	// Hash new password
+	hashedValue, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
+	if err != nil {
+		session.Values["flash_error"] = "Failed to update password."
+		session.Save(r, w)
+		http.Redirect(w, r, "/admin/profile", http.StatusFound)
+		return
+	}
 
-func (h *WebHandler) HandleDeleteUser(w http.ResponseWriter, r *http.Request) {
-	idStr := r.URL.Query().Get("id")
-	id, _ := strconv.ParseInt(idStr, 10, 64)
+	user.PasswordHash = string(hashedValue)
+	if err := h.userRepo.Update(user); err != nil {
+		session.Values["flash_error"] = "Failed to save password: " + err.Error()
+		session.Save(r, w)
+		http.Redirect(w, r, "/admin/profile", http.StatusFound)
+		return
+	}
 
-	h.userRepo.Delete(id)
-	http.Redirect(w, r, "/admin/users", http.StatusFound)
+	session.Values["flash_success"] = "Password updated successfully!"
+	session.Save(r, w)
+	http.Redirect(w, r, "/admin/profile", http.StatusFound)
 }
 
 // API Keys Management
@@ -655,11 +636,9 @@ func (h *WebHandler) RegisterRoutes(r chi.Router) {
 	r.Post("/admin/queries/run", h.RunQuery) // Test Run
 	r.Get("/admin/queries/delete", h.DeleteQuery)
 
-	// Users
-	r.Get("/admin/users", h.HandleListUsers)
-	r.Get("/admin/users/add", h.HandleUserForm)
-	r.Post("/admin/users/save", h.HandleSaveUser)
-	r.Get("/admin/users/delete", h.HandleDeleteUser)
+	// Profile
+	r.Get("/admin/profile", h.HandleProfile)
+	r.Post("/admin/profile", h.HandleUpdatePassword)
 
 	r.Get("/admin/api-keys", h.HandleListApiKeys)
 	r.Post("/admin/api-keys/create", h.HandleCreateApiKey)

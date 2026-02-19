@@ -39,8 +39,8 @@
                 <li><a href="/api/docs" target="_blank" role="button" class="outline secondary">API Docs</a></li>
                 <li><a href="/admin/api-keys" role="button"
                         class="outline secondary {{if eq .Path `/admin/api-keys`}}contrast{{end}}">API Keys</a></li>
-                <li><a href="/admin/users" role="button"
-                        class="outline secondary {{if eq .Path `/admin/users`}}contrast{{end}}">Users</a></li>
+                <li><a href="/admin/profile" role="button"
+                        class="outline secondary {{if eq .Path `/admin/profile`}}contrast{{end}}">My Profile</a></li>
                 <li><a href="/admin/logs" role="button" class="outline secondary">Logs</a></li>
             </ul>
         </nav>
@@ -51,10 +51,8 @@
         {{template "connections" .Data}}
         {{else if eq .Page "queries.html"}}
         {{template "queries" .Data}}
-        {{else if eq .Page "users.html"}}
-        {{template "users" .Data}}
-        {{else if eq .Page "user_form.html"}}
-        {{template "user_form" .Data}}
+        {{else if eq .Page "profile.html"}}
+        {{template "profile" .Data}}
         {{else if eq .Page "logs.html"}}
         {{template "audit_logs" .Data}}
         {{else if eq .Page "audit_logs.html"}}

@@ -1,0 +1,40 @@
+{{define "profile"}}
+<h3>My Profile</h3>
+
+{{if .Success}}
+<article style="background: var(--ins-color); color: white; padding: 1rem;">
+    {{.Success}}
+</article>
+{{end}}
+
+{{if .Error}}
+<article style="background: var(--del-color); color: white; padding: 1rem;">
+    {{.Error}}
+</article>
+{{end}}
+
+<div class="grid">
+    <article>
+        <header>Account Info</header>
+        <p><strong>Username:</strong> {{.Username}}</p>
+    </article>
+</div>
+
+<article>
+    <header>Change Password</header>
+    <form method="POST" action="/admin/profile">
+        <label for="current_password">Current Password</label>
+        <input type="password" id="current_password" name="current_password" required
+            placeholder="Enter current password">
+
+        <label for="new_password">New Password</label>
+        <input type="password" id="new_password" name="new_password" required placeholder="Enter new password">
+
+        <label for="confirm_password">Confirm New Password</label>
+        <input type="password" id="confirm_password" name="confirm_password" required
+            placeholder="Confirm new password">
+
+        <button type="submit">Update Password</button>
+    </form>
+</article>
+{{end}}
