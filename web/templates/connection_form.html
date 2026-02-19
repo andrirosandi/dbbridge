@@ -52,10 +52,7 @@
     <!-- Hidden input to store the actual driver name for the backend -->
     <input type="hidden" id="driver" name="driver" value="{{.Connection.Driver}}">
 
-    <label for="connection_string">
-        Connection String
-        {{if .IsEdit}}<small>(Leave blank to keep existing)</small>{{end}}
-    </label>
+    <label for="connection_string">Connection String</label>
     <!-- Use decrypted string if available -->
     <input type="text" id="connection_string" name="connection_string" value="{{.ConnectionStringDec}}" {{if not
         .IsEdit}}required{{end}} placeholder="Select a preset to auto-fill">

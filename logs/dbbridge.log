@@ -670,3 +670,16 @@ INFO: 2026/02/19 10:41:46 main.go:41: Starting DbBridge...
 INFO: 2026/02/19 10:41:47 main.go:116: Server listening on port 8080
 INFO: 2026/02/19 10:41:53 main.go:123: Shutting down server...
 INFO: 2026/02/19 10:41:54 main.go:131: Server stopped
+INFO: 2026/02/19 10:52:02 main.go:41: Starting DbBridge...
+INFO: 2026/02/19 10:52:02 main.go:116: Server listening on port 8080
+INFO: 2026/02/19 10:52:37 middleware.go:24: GET /admin/queries 200 46.2213ms
+INFO: 2026/02/19 10:52:41 middleware.go:24: GET /admin 200 16.6705ms
+INFO: 2026/02/19 10:52:50 middleware.go:24: GET /admin/connections 200 535.2µs
+INFO: 2026/02/19 10:52:54 middleware.go:24: GET /admin/queries 200 1.1654ms
+INFO: 2026/02/19 10:52:55 middleware.go:24: GET /api/docs 200 0s
+INFO: 2026/02/19 10:52:55 middleware.go:24: GET /api/docs 200 0s
+INFO: 2026/02/19 10:52:55 middleware.go:24: GET /api/docs/openapi.json 200 15.5245ms
+INFO: 2026/02/19 10:52:55 middleware.go:24: GET /api/docs/openapi.json 200 15.5245ms
+INFO: 2026/02/19 10:55:51 middleware.go:24: GET /admin/connections 200 79.6646ms
+INFO: 2026/02/19 10:55:55 middleware.go:24: GET /admin/connections/edit 200 13.3568ms
+INFO: 2026/02/19 10:56:06 middleware.go:24: POST /admin/connections/test 200 522.2889ms
