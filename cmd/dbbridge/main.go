@@ -7,6 +7,7 @@ import (
 	"dbbridge/internal/data"
 	"dbbridge/internal/logger"
 	"dbbridge/internal/service"
+	"flag"
 	"fmt"
 	"net/http"
 	"os"
@@ -15,6 +16,7 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
+	"golang.org/x/term"
 
 	// Drivers
 	_ "github.com/alexbrainman/odbc"
@@ -25,6 +27,95 @@ import (
 )
 
 func main() {
+	// Check for CLI subcommands
+	if len(os.Args) > 1 {
+		switch os.Args[1] {
+		case "reset-password":
+			handleResetPassword(os.Args[2:])
+			return
+		case "help", "--help", "-h":
+			printHelp()
+			return
+		default:
+			fmt.Printf("Unknown command: %s\n", os.Args[1])
+			printHelp()
+			os.Exit(1)
+		}
+	}
+
+	// No subcommand — start server
+	startServer()
+}
+
+func printHelp() {
+	fmt.Println("DbBridge - Database Bridge Server")
+	fmt.Println()
+	fmt.Println("Usage:")
+	fmt.Println("  dbbridge                         Start the server")
+	fmt.Println("  dbbridge reset-password -u <user>  Reset user password (interactive)")
+	fmt.Println("  dbbridge help                    Show this help")
+}
+
+func handleResetPassword(args []string) {
+	fs := flag.NewFlagSet("reset-password", flag.ExitOnError)
+	username := fs.String("u", "", "Username to reset")
+	fs.Parse(args)
+
+	if *username == "" {
+		fmt.Println("Usage: dbbridge reset-password -u <username>")
+		os.Exit(1)
+	}
+
+	// Interactive password input (hidden)
+	fmt.Print("New password: ")
+	passBytes, err := term.ReadPassword(int(syscall.Stdin))
+	fmt.Println() // newline after hidden input
+	if err != nil {
+		fmt.Printf("Failed to read password: %v\n", err)
+		os.Exit(1)
+	}
+	password := string(passBytes)
+
+	fmt.Print("Confirm password: ")
+	confirmBytes, err := term.ReadPassword(int(syscall.Stdin))
+	fmt.Println()
+	if err != nil {
+		fmt.Printf("Failed to read password: %v\n", err)
+		os.Exit(1)
+	}
+
+	if password != string(confirmBytes) {
+		fmt.Println("Passwords do not match.")
+		os.Exit(1)
+	}
+
+	if password == "" {
+		fmt.Println("Password cannot be empty.")
+		os.Exit(1)
+	}
+
+	// Initialize minimal dependencies
+	db, err := data.InitDB()
+	if err != nil {
+		fmt.Printf("Failed to init database: %v\n", err)
+		os.Exit(1)
+	}
+	defer db.Close()
+
+	userRepo := data.NewUserRepo(db)
+	apiKeyRepo := data.NewApiKeyRepo(db)
+	authSvc := service.NewAuthService(userRepo, apiKeyRepo)
+
+	err = authSvc.ResetPassword(*username, password)
+	if err != nil {
+		fmt.Printf("Failed to reset password: %v\n", err)
+		os.Exit(1)
+	}
+
+	fmt.Printf("Password for user '%s' has been reset successfully.\n", *username)
+}
+
+func startServer() {
 	// 1. Load Config
 	cfg, err := config.Load()
 	if err != nil {
@@ -50,7 +141,6 @@ func main() {
 	// 4. Initialize Repos
 	connRepo := data.NewConnectionRepo(db)
 	queryRepo := data.NewQueryRepo(db)
-	// userRepo := data.NewUserRepo(db) // Not used directly in executor yet
 
 	// 5. Initialize Services
 	cryptoSvc, err := service.NewEncryptionService(cfg.DbBridgeKey)
@@ -66,16 +156,8 @@ func main() {
 
 	// 6. Initialize Handlers
 	webHandler := api.NewWebHandler(connRepo, queryRepo, auditRepo, userRepo, apiKeyRepo, authSvc, cryptoSvc, cfg)
-	authHandler := api.NewAuthHandler(authSvc, cfg.DbBridgeKey, webHandler.GetTemplates()) // Helper to share templates? Or just reuse.
-	// To avoid circular dependency or change WebHandler, let's just expose Templates field in WebHandler or pass nil if AuthHandler parses its own?
-	// Better: Init templates in main and pass to both. But WebHandler has logic.
-	// I'll update NewAuthHandler usage to assume it shares templates if possible or loads same.
-	// For simplicity in this edit block (limit changes), I will let NewAuthHandler() parse its own as implemented above, unless I change it.
-	// Wait, I implemented NewAuthHandler accepting templates.
-	// Let's add a getter to WebHandler or make templates public field.
-	// Modifying WebHandler in main:
+	authHandler := api.NewAuthHandler(authSvc, cfg.DbBridgeKey, webHandler.GetTemplates())
 
-	// 7. Initialize Handlers
 	docHandler := api.NewDocHandler(queryRepo, connRepo)
 	apiHandler := api.NewHandler(queryExecutor, docHandler, authSvc)
 
@@ -83,11 +165,15 @@ func main() {
 	r := chi.NewRouter()
 	r.Use(api.LoggingMiddleware)
 
+	// Rate Limiters
+	loginLimiter := api.NewRateLimiter(5, 3) // 5 req/min, burst 3 (brute force protection)
+	apiLimiter := api.NewRateLimiter(60, 10) // 60 req/min, burst 10
+
 	// Public Routes
 	r.Get("/setup", authHandler.SetupPage)
 	r.Post("/setup", authHandler.DoSetup)
 	r.Get("/login", authHandler.LoginPage)
-	r.Post("/login", authHandler.DoLogin)
+	r.With(loginLimiter.Middleware).Post("/login", authHandler.DoLogin)
 	r.Get("/logout", authHandler.Logout)
 
 	// Protected Admin Routes
@@ -96,9 +182,11 @@ func main() {
 		webHandler.RegisterRoutes(r)
 	})
 
-	// Public API (Protected by API Key inside handler/middleware but we might want to standardize)
-	// API currently uses its own AuthMiddleware placeholder.
-	r.Mount("/api", apiHandler.Routes()) // /api/...
+	// Public API (Protected by API Key + Rate Limiter)
+	r.Route("/api", func(r chi.Router) {
+		r.Use(apiLimiter.MiddlewareByAPIKey)
+		r.Mount("/", apiHandler.Routes())
+	})
 
 	// Static files (Public)
 	webHandler.RegisterStatic(r)

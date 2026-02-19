@@ -126,3 +126,19 @@ func (s *AuthService) HasUsers() (bool, error) {
 	}
 	return count > 0, nil
 }
+
+// ResetPassword resets a user's password by username
+func (s *AuthService) ResetPassword(username, newPassword string) error {
+	user, err := s.userRepo.GetUserByUsername(username)
+	if err != nil {
+		return errors.New("user not found: " + username)
+	}
+
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
+	if err != nil {
+		return err
+	}
+
+	user.PasswordHash = string(hashedPassword)
+	return s.userRepo.Update(user)
+}

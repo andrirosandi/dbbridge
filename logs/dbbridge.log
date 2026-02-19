@@ -712,3 +712,26 @@ INFO: 2026/02/19 11:36:01 main.go:116: Server listening on port 8080
 ERROR: 2026/02/19 11:36:02 main.go:118: Server startup failed: listen tcp :8080: bind: Only one usage of each socket address (protocol/network address/port) is normally permitted.
 INFO: 2026/02/19 11:46:11 main.go:123: Shutting down server...
 INFO: 2026/02/19 11:46:11 main.go:131: Server stopped
+INFO: 2026/02/19 11:46:15 main.go:41: Starting DbBridge...
+INFO: 2026/02/19 11:46:15 main.go:116: Server listening on port 8080
+INFO: 2026/02/19 11:46:25 middleware.go:24: GET /admin/users 404 998.4µs
+INFO: 2026/02/19 11:48:04 middleware.go:24: GET /admin 200 42.6568ms
+INFO: 2026/02/19 11:48:08 middleware.go:24: GET /admin/profile 200 0s
+INFO: 2026/02/19 11:58:47 middleware.go:24: GET /admin/queries 200 17.017ms
+INFO: 2026/02/19 11:58:51 middleware.go:24: GET /admin/queries/edit 200 13.6155ms
+INFO: 2026/02/19 11:59:18 middleware.go:24: POST /admin/queries/save 302 41.2207ms
+INFO: 2026/02/19 11:59:18 middleware.go:24: GET /admin/queries 200 1.6487ms
+INFO: 2026/02/19 11:59:20 middleware.go:24: GET /api/docs 200 1.0026ms
+INFO: 2026/02/19 11:59:20 middleware.go:24: GET /api/docs 200 1.0026ms
+INFO: 2026/02/19 11:59:20 middleware.go:24: GET /api/docs/openapi.json 200 10.124ms
+INFO: 2026/02/19 11:59:20 middleware.go:24: GET /api/docs/openapi.json 200 10.6507ms
+INFO: 2026/02/19 12:00:30 middleware.go:24: GET /api/docs/openapi.json 200 2.5549ms
+INFO: 2026/02/19 12:00:30 middleware.go:24: GET /api/docs/openapi.json 200 3.6785ms
+INFO: 2026/02/19 13:45:42 middleware.go:24: GET /admin/queries 200 102.1711ms
+INFO: 2026/02/19 13:46:15 middleware.go:24: GET /admin/queries/edit 200 23.8274ms
+INFO: 2026/02/19 13:46:18 middleware.go:24: GET /admin/profile 200 5.216ms
+INFO: 2026/02/19 13:59:00 main.go:41: Starting DbBridge...
+INFO: 2026/02/19 13:59:01 main.go:122: Server listening on port 8080
+ERROR: 2026/02/19 13:59:01 main.go:124: Server startup failed: listen tcp :8080: bind: Only one usage of each socket address (protocol/network address/port) is normally permitted.
+INFO: 2026/02/19 13:59:08 main.go:123: Shutting down server...
+INFO: 2026/02/19 13:59:08 main.go:131: Server stopped
