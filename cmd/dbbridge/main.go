@@ -33,6 +33,18 @@ func main() {
 		case "reset-password":
 			handleResetPassword(os.Args[2:])
 			return
+		case "install":
+			installService()
+			return
+		case "uninstall":
+			uninstallService()
+			return
+		case "start":
+			startService()
+			return
+		case "stop":
+			stopService()
+			return
 		case "help", "--help", "-h":
 			printHelp()
 			return
@@ -43,7 +55,13 @@ func main() {
 		}
 	}
 
-	// No subcommand — start server
+	// No subcommand — check if running as Windows Service
+	if isRunningAsService() {
+		runAsService()
+		return
+	}
+
+	// Foreground mode
 	startServer()
 }
 
@@ -51,7 +69,11 @@ func printHelp() {
 	fmt.Println("DbBridge - Database Bridge Server")
 	fmt.Println()
 	fmt.Println("Usage:")
-	fmt.Println("  dbbridge                         Start the server")
+	fmt.Println("  dbbridge                         Start the server (foreground)")
+	fmt.Println("  dbbridge install                 Install as Windows Service")
+	fmt.Println("  dbbridge uninstall               Remove Windows Service")
+	fmt.Println("  dbbridge start                   Start the Windows Service")
+	fmt.Println("  dbbridge stop                    Stop the Windows Service")
 	fmt.Println("  dbbridge reset-password -u <user>  Reset user password (interactive)")
 	fmt.Println("  dbbridge help                    Show this help")
 }
