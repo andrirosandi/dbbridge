@@ -124,19 +124,22 @@ func (e *QueryExecutor) ExecuteSQL(ctx context.Context, connectionID int64, sqlT
 		return nil, fmt.Errorf("failed to decrypt connection string: %w", err)
 	}
 
-	// 3. Parse SQL parameters
-	// Check for system variables like {pagination}
+	// 3. Process system variables like {pagination}
 	sqlText = e.processSystemVariables(sqlText, connDetails.Driver, params, decryptedConnStr)
 
+	// 4. Process ORDER BY pattern {order_by:defaultColumn(whitelist):defaultDir}
+	sqlText = e.processOrderBy(sqlText, params)
+
+	// 5. Parse SQL parameters (convert {param} to ?)
 	parseResult := e.parseSQL(sqlText, params)
 
-	// 4. Build Parameter List
+	// 6. Build Parameter List
 	args, err := e.parser.MapValues(parseResult.ParamNames, params, parseResult.Defaults)
 	if err != nil {
 		return nil, err
 	}
 
-	// 5. Connect to DB
+	// 7. Connect to DB
 	// TODO: Connection pooling
 	db, err := sql.Open(connDetails.Driver, decryptedConnStr)
 	if err != nil {
@@ -152,14 +155,14 @@ func (e *QueryExecutor) ExecuteSQL(ctx context.Context, connectionID int64, sqlT
 		return nil, fmt.Errorf("failed to ping database: %w", err)
 	}
 
-	// 6. Execute Query
+	// 8. Execute Query
 	rows, err := db.QueryContext(ctxTimeout, parseResult.SQL, args...)
 	if err != nil {
 		return nil, fmt.Errorf("execution error: %w", err)
 	}
 	defer rows.Close()
 
-	// 7. Map Results
+	// 9. Map Results
 	columns, err := rows.Columns()
 	if err != nil {
 		return nil, err
@@ -203,6 +206,73 @@ func (e *QueryExecutor) ExecuteSQL(ctx context.Context, connectionID int64, sqlT
 func (e *QueryExecutor) parseSQL(sqlText string, params map[string]interface{}) *core.ParseResult {
 	// Re-using the logic from param_parser.go
 	return e.parser.Parse(sqlText, params)
+}
+
+func (e *QueryExecutor) processOrderBy(sqlText string, params map[string]interface{}) string {
+	// Regex to match {order_by:defaultColumn(whitelist1,whitelist2,...):defaultDirection}
+	// Pattern: {order_by:trdate(id,trdate,type):desc}
+	re := regexp.MustCompile(`(?i)\{\s*order_by\s*:\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*\(\s*([^)]*)\s*\)\s*:\s*(asc|desc)?\s*\}`)
+
+	loc := re.FindStringIndex(sqlText)
+	if loc == nil {
+		return sqlText
+	}
+
+	match := re.FindStringSubmatch(sqlText)
+	if len(match) < 4 {
+		return sqlText
+	}
+
+	defaultColumn := match[1]
+	whitelistStr := match[2]
+	rawDirection := match[3]
+
+	if rawDirection == "" {
+		rawDirection = "ASC"
+	}
+	defaultDirection := strings.ToUpper(rawDirection)
+
+	whitelist := make(map[string]bool)
+	for _, col := range strings.Split(whitelistStr, ",") {
+		col = strings.TrimSpace(col)
+		if col != "" {
+			whitelist[strings.ToLower(col)] = true
+		}
+	}
+
+	// Auto-whitelist: if whitelist is empty but default column exists, add it
+	if len(whitelist) == 0 && defaultColumn != "" {
+		whitelist[strings.ToLower(defaultColumn)] = true
+	}
+
+	if len(whitelist) == 0 {
+		return sqlText
+	}
+
+	column := defaultColumn
+	direction := defaultDirection
+
+	if orderBy, ok := params["order_by"]; ok {
+		if col, ok := orderBy.(string); ok {
+			col = strings.TrimSpace(col)
+			if col != "" && whitelist[strings.ToLower(col)] {
+				column = col
+			}
+		}
+	}
+
+	if orderDir, ok := params["order_direction"]; ok {
+		if dir, ok := orderDir.(string); ok {
+			dir = strings.ToLower(strings.TrimSpace(dir))
+			if dir == "asc" || dir == "desc" {
+				direction = strings.ToUpper(dir)
+			}
+		}
+	}
+
+	replacement := fmt.Sprintf("ORDER BY %s %s", column, direction)
+	finalSQL := strings.Replace(sqlText, match[0], replacement, 1)
+	return finalSQL
 }
 
 func (e *QueryExecutor) processSystemVariables(sqlText string, driver string, params map[string]interface{}, connStr string) string {
