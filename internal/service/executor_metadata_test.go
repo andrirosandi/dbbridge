@@ -115,20 +115,20 @@ func TestBuildMetadata(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			meta := executor.buildMetadata(tt.page, tt.limit, tt.total)
 
-			if meta.TotalPages != tt.expectTotalPages {
-				t.Errorf("TotalPages = %d, want %d", meta.TotalPages, tt.expectTotalPages)
+			if *meta.TotalPages != tt.expectTotalPages {
+				t.Errorf("TotalPages = %d, want %d", *meta.TotalPages, tt.expectTotalPages)
 			}
-			if meta.HasNext != tt.expectHasNext {
-				t.Errorf("HasNext = %v, want %v", meta.HasNext, tt.expectHasNext)
+			if *meta.HasNext != tt.expectHasNext {
+				t.Errorf("HasNext = %v, want %v", *meta.HasNext, tt.expectHasNext)
 			}
-			if meta.HasPrev != tt.expectHasPrev {
-				t.Errorf("HasPrev = %v, want %v", meta.HasPrev, tt.expectHasPrev)
+			if *meta.HasPrev != tt.expectHasPrev {
+				t.Errorf("HasPrev = %v, want %v", *meta.HasPrev, tt.expectHasPrev)
 			}
-			if meta.Page != tt.page {
-				t.Errorf("Page = %d, want %d", meta.Page, tt.page)
+			if *meta.Page != tt.page {
+				t.Errorf("Page = %d, want %d", *meta.Page, tt.page)
 			}
-			if meta.Limit != tt.limit {
-				t.Errorf("Limit = %d, want %d", meta.Limit, tt.limit)
+			if *meta.Limit != tt.limit {
+				t.Errorf("Limit = %d, want %d", *meta.Limit, tt.limit)
 			}
 			if *meta.Total != tt.total {
 				t.Errorf("Total = %d, want %d", *meta.Total, tt.total)

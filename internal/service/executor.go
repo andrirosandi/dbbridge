@@ -33,21 +33,21 @@ func NewQueryExecutor(connRepo core.ConnectionRepository, queryRepo core.QueryRe
 }
 
 type MetaInfo struct {
-	Columns    []string `json:"columns"`
-	Total      *int64   `json:"total"`
-	Page       int      `json:"page"`
-	Limit      int      `json:"limit"`
-	TotalPages int      `json:"total_pages"`
-	HasNext    bool     `json:"has_next"`
-	HasPrev    bool     `json:"has_prev"`
-	NextPage   *int     `json:"next_page"`
-	PrevPage   *int     `json:"prev_page"`
-	Error      string   `json:"error,omitempty"`
+	Columns    []string `json:"columns,omitempty"`
+	Total      *int64   `json:"total,omitempty"`
+	Page       *int     `json:"page,omitempty"`
+	Limit      *int     `json:"limit,omitempty"`
+	TotalPages *int     `json:"total_pages,omitempty"`
+	HasNext    *bool    `json:"has_next,omitempty"`
+	HasPrev    *bool    `json:"has_prev,omitempty"`
+	NextPage   *int     `json:"next_page,omitempty"`
+	PrevPage   *int     `json:"prev_page,omitempty"`
 }
 
 type ExecutionResult struct {
-	Data []map[string]interface{} `json:"data"`
-	Meta MetaInfo                 `json:"meta"`
+	Data  []map[string]interface{} `json:"data"`
+	Meta  MetaInfo                 `json:"meta,omitempty"`
+	Error string                   `json:"error,omitempty"`
 }
 
 func (e *QueryExecutor) Execute(ctx context.Context, connectionID int64, querySlug string, params map[string]interface{}) (result *ExecutionResult, err error) {
@@ -239,14 +239,14 @@ func (e *QueryExecutor) ExecuteSQL(ctx context.Context, connectionID int64, sqlT
 		}
 	}
 
-	// 11. Build metadata
+	// 11. Build metadata (only columns if no select block)
 	meta := MetaInfo{
 		Columns: columns,
-		Page:    page,
-		Limit:   limit,
 	}
 
 	// 12. Execute COUNT query if {select}{endselect} block exists
+	var execError string
+
 	if selectBlock.HasBlock && selectBlock.Error == "" {
 		countSQL := selectBlock.CountSQL
 
@@ -271,21 +271,30 @@ func (e *QueryExecutor) ExecuteSQL(ctx context.Context, connectionID int64, sqlT
 		}
 
 		if countErr != nil {
-			meta.Error = countErr.Error()
+			execError = countErr.Error()
 		} else {
-			meta.Total = &total
-			meta.TotalPages = int(total) / limit
+			pagePtr := &page
+			limitPtr := &limit
+			totalPages := int(total) / limit
 			if int(total)%limit > 0 {
-				meta.TotalPages++
+				totalPages++
 			}
-			meta.HasNext = page < meta.TotalPages
-			meta.HasPrev = page > 1
+			totalPagesPtr := &totalPages
+			hasNext := page < totalPages
+			hasPrev := page > 1
 
-			if meta.HasNext {
+			meta.Page = pagePtr
+			meta.Limit = limitPtr
+			meta.Total = &total
+			meta.TotalPages = totalPagesPtr
+			meta.HasNext = &hasNext
+			meta.HasPrev = &hasPrev
+
+			if hasNext {
 				np := page + 1
 				meta.NextPage = &np
 			}
-			if meta.HasPrev {
+			if hasPrev {
 				pp := page - 1
 				meta.PrevPage = &pp
 			}
@@ -293,8 +302,9 @@ func (e *QueryExecutor) ExecuteSQL(ctx context.Context, connectionID int64, sqlT
 	}
 
 	return &ExecutionResult{
-		Data: resultRows,
-		Meta: meta,
+		Data:  resultRows,
+		Meta:  meta,
+		Error: execError,
 	}, nil
 }
 
@@ -359,6 +369,13 @@ func (e *QueryExecutor) buildMetadata(page, limit int, total int64) MetaInfo {
 	hasNext := page < totalPages
 	hasPrev := page > 1
 
+	pagePtr := &page
+	limitPtr := &limit
+	totalPtr := &total
+	totalPagesPtr := &totalPages
+	hasNextPtr := &hasNext
+	hasPrevPtr := &hasPrev
+
 	var nextPage, prevPage *int
 	if hasNext {
 		np := page + 1
@@ -370,12 +387,12 @@ func (e *QueryExecutor) buildMetadata(page, limit int, total int64) MetaInfo {
 	}
 
 	return MetaInfo{
-		Page:       page,
-		Limit:      limit,
-		Total:      &total,
-		TotalPages: totalPages,
-		HasNext:    hasNext,
-		HasPrev:    hasPrev,
+		Page:       pagePtr,
+		Limit:      limitPtr,
+		Total:      totalPtr,
+		TotalPages: totalPagesPtr,
+		HasNext:    hasNextPtr,
+		HasPrev:    hasPrevPtr,
 		NextPage:   nextPage,
 		PrevPage:   prevPage,
 	}
