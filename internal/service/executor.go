@@ -32,9 +32,22 @@ func NewQueryExecutor(connRepo core.ConnectionRepository, queryRepo core.QueryRe
 	}
 }
 
+type MetaInfo struct {
+	Columns    []string `json:"columns"`
+	Total      *int64   `json:"total"`
+	Page       int      `json:"page"`
+	Limit      int      `json:"limit"`
+	TotalPages int      `json:"total_pages"`
+	HasNext    bool     `json:"has_next"`
+	HasPrev    bool     `json:"has_prev"`
+	NextPage   *int     `json:"next_page"`
+	PrevPage   *int     `json:"prev_page"`
+	Error      string   `json:"error,omitempty"`
+}
+
 type ExecutionResult struct {
-	Columns []string                 `json:"columns"`
-	Rows    []map[string]interface{} `json:"rows"`
+	Data []map[string]interface{} `json:"data"`
+	Meta MetaInfo                 `json:"meta"`
 }
 
 func (e *QueryExecutor) Execute(ctx context.Context, connectionID int64, querySlug string, params map[string]interface{}) (result *ExecutionResult, err error) {
@@ -130,7 +143,10 @@ func (e *QueryExecutor) ExecuteSQL(ctx context.Context, connectionID int64, sqlT
 	// 4. Process ORDER BY pattern {order_by:defaultColumn(whitelist):defaultDir}
 	sqlText = e.processOrderBy(sqlText, params)
 
-	// 5. Parse SQL parameters (convert {param} to ?)
+	// 5. Process {select}{endselect} block for metadata COUNT query
+	selectBlock := e.processSelectBlock(sqlText)
+
+	// 6. Parse SQL parameters (convert {param} to ?)
 	parseResult := e.parseSQL(sqlText, params)
 
 	// 6. Build Parameter List
@@ -196,9 +212,89 @@ func (e *QueryExecutor) ExecuteSQL(ctx context.Context, connectionID int64, sqlT
 		resultRows = append(resultRows, rowMap)
 	}
 
-	return &ExecutionResult{
+	// 10. Extract page and limit from params
+	page := 1
+	limit := 50
+
+	if p, ok := params["_page"]; ok {
+		if val, ok := p.(float64); ok {
+			page = int(val)
+		} else if val, ok := p.(int); ok {
+			page = val
+		} else if val, ok := p.(string); ok {
+			if v, err := strconv.Atoi(val); err == nil {
+				page = v
+			}
+		}
+	}
+	if l, ok := params["_limit"]; ok {
+		if val, ok := l.(float64); ok {
+			limit = int(val)
+		} else if val, ok := l.(int); ok {
+			limit = val
+		} else if val, ok := l.(string); ok {
+			if v, err := strconv.Atoi(val); err == nil {
+				limit = v
+			}
+		}
+	}
+
+	// 11. Build metadata
+	meta := MetaInfo{
 		Columns: columns,
-		Rows:    resultRows,
+		Page:    page,
+		Limit:   limit,
+	}
+
+	// 12. Execute COUNT query if {select}{endselect} block exists
+	if selectBlock.HasBlock && selectBlock.Error == "" {
+		countSQL := selectBlock.CountSQL
+
+		var total int64 = 0
+		var countErr error = nil
+
+		if selectBlock.SelectContent != "" {
+			var countArgs []interface{}
+			if strings.Contains(countSQL, "?") {
+				countArgs = args
+			}
+
+			countRows, err := db.QueryContext(ctxTimeout, countSQL, countArgs...)
+			if err != nil {
+				countErr = err
+			} else {
+				defer countRows.Close()
+				if countRows.Next() {
+					countRows.Scan(&total)
+				}
+			}
+		}
+
+		if countErr != nil {
+			meta.Error = countErr.Error()
+		} else {
+			meta.Total = &total
+			meta.TotalPages = int(total) / limit
+			if int(total)%limit > 0 {
+				meta.TotalPages++
+			}
+			meta.HasNext = page < meta.TotalPages
+			meta.HasPrev = page > 1
+
+			if meta.HasNext {
+				np := page + 1
+				meta.NextPage = &np
+			}
+			if meta.HasPrev {
+				pp := page - 1
+				meta.PrevPage = &pp
+			}
+		}
+	}
+
+	return &ExecutionResult{
+		Data: resultRows,
+		Meta: meta,
 	}, nil
 }
 
@@ -206,6 +302,83 @@ func (e *QueryExecutor) ExecuteSQL(ctx context.Context, connectionID int64, sqlT
 func (e *QueryExecutor) parseSQL(sqlText string, params map[string]interface{}) *core.ParseResult {
 	// Re-using the logic from param_parser.go
 	return e.parser.Parse(sqlText, params)
+}
+
+type SelectBlockResult struct {
+	HasBlock      bool
+	SQLWithout    string
+	CountSQL      string
+	SelectContent string
+	Error         string
+}
+
+func (e *QueryExecutor) processSelectBlock(sqlText string) *SelectBlockResult {
+	reOpen := regexp.MustCompile(`(?i)\{\s*select\s*\}`)
+	reClose := regexp.MustCompile(`(?i)\{\s*endselect\s*\}`)
+
+	openLoc := reOpen.FindStringIndex(sqlText)
+	closeLoc := reClose.FindStringIndex(sqlText)
+
+	if openLoc == nil || closeLoc == nil {
+		return &SelectBlockResult{
+			HasBlock:   false,
+			SQLWithout: sqlText,
+		}
+	}
+
+	if closeLoc[0] < openLoc[1] {
+		return &SelectBlockResult{
+			HasBlock:   true,
+			SQLWithout: sqlText,
+			CountSQL:   sqlText,
+			Error:      "Invalid {select}{endselect} block: missing opening tag",
+		}
+	}
+
+	openEnd := openLoc[1]
+	closeStart := closeLoc[0]
+
+	selectContent := strings.TrimSpace(sqlText[openEnd:closeStart])
+
+	countSQL := strings.Replace(sqlText, "{select}"+selectContent+"{endselect}", "COUNT(*)", 1)
+
+	return &SelectBlockResult{
+		HasBlock:      true,
+		SQLWithout:    sqlText,
+		CountSQL:      countSQL,
+		SelectContent: selectContent,
+	}
+}
+
+func (e *QueryExecutor) buildMetadata(page, limit int, total int64) MetaInfo {
+	totalPages := int(total) / limit
+	if int(total)%limit > 0 {
+		totalPages++
+	}
+
+	hasNext := page < totalPages
+	hasPrev := page > 1
+
+	var nextPage, prevPage *int
+	if hasNext {
+		np := page + 1
+		nextPage = &np
+	}
+	if hasPrev {
+		pp := page - 1
+		prevPage = &pp
+	}
+
+	return MetaInfo{
+		Page:       page,
+		Limit:      limit,
+		Total:      &total,
+		TotalPages: totalPages,
+		HasNext:    hasNext,
+		HasPrev:    hasPrev,
+		NextPage:   nextPage,
+		PrevPage:   prevPage,
+	}
 }
 
 func (e *QueryExecutor) processOrderBy(sqlText string, params map[string]interface{}) string {
