@@ -334,32 +334,64 @@
 
             const data = await response.json();
 
-            if (!response.ok) {
+            if (!response.ok || data.error) {
                 throw new Error(data.error || "Unknown error");
             }
 
             // Render Table
-            if (!data.rows || data.rows.length === 0) {
+            if (!data.data || data.data.length === 0) {
                 resultDiv.innerHTML = '<small>No results found.</small>';
                 return;
             }
 
+            // Get columns from meta (if available)
+            const columns = data.meta && data.meta.columns ? data.meta.columns : Object.keys(data.data[0] || {});
+
             let html = '<table role="grid" style="font-size: 0.8rem;"><thead><tr>';
-            data.columns.forEach(col => {
+            columns.forEach(col => {
                 html += `<th>${col}</th>`;
             });
             html += '</tr></thead><tbody>';
 
-            data.rows.forEach(row => {
+            data.data.forEach(row => {
                 html += '<tr>';
-                data.columns.forEach(col => {
+                columns.forEach(col => {
                     html += `<td>${row[col] !== null ? row[col] : '<em>NULL</em>'}</td>`;
                 });
                 html += '</tr>';
             });
             html += '</tbody></table>';
 
-            resultDiv.innerHTML = html;
+            // Show metadata info if available
+            let metaInfo = '';
+            if (data.meta) {
+                metaInfo = '<small style="color: #666;">';
+                if (data.meta.total !== undefined && data.meta.total !== null) {
+                    metaInfo += `Total: ${data.meta.total} | `;
+                }
+                if (data.meta.page !== undefined && data.meta.page !== null) {
+                    metaInfo += `Page: ${data.meta.page}`;
+                    if (data.meta.total_pages !== undefined && data.meta.total_pages !== null) {
+                        metaInfo += ` of ${data.meta.total_pages}`;
+                    }
+                    metaInfo += ' | ';
+                }
+                if (data.meta.limit !== undefined && data.meta.limit !== null) {
+                    metaInfo += `Limit: ${data.meta.limit}`;
+                }
+                if (data.meta.has_next !== undefined || data.meta.has_prev !== undefined) {
+                    metaInfo += ' | ';
+                    if (data.meta.has_prev) {
+                        metaInfo += '<a href="#" onclick="loadResults(currentPage - 1); return false;">← Prev</a> ';
+                    }
+                    if (data.meta.has_next) {
+                        metaInfo += '<a href="#" onclick="loadResults(currentPage + 1); return false;">Next →</a>';
+                    }
+                }
+                metaInfo += '</small>';
+            }
+
+            resultDiv.innerHTML = html + metaInfo;
 
         } catch (e) {
             resultDiv.innerHTML = `<article style="background-color: #ffe6e6; color: #cc0000; border: 1px solid #cc0000;"><strong>Error:</strong> ${e.message}</article>`;

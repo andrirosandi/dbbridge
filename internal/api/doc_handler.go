@@ -146,15 +146,68 @@ func (h *DocHandler) GetOpenAPISpec(w http.ResponseWriter, r *http.Request) {
 								"schema": map[string]interface{}{
 									"type": "object",
 									"properties": map[string]interface{}{
-										"rows": map[string]interface{}{
-											"type": "array",
+										"data": map[string]interface{}{
+											"type":        "array",
+											"description": "Array of result rows",
 											"items": map[string]interface{}{
 												"type": "object",
 											},
 										},
-										"columns": map[string]interface{}{
-											"type":  "array",
-											"items": map[string]string{"type": "string"},
+										"meta": map[string]interface{}{
+											"type":        "object",
+											"description": "Metadata information",
+											"properties": map[string]interface{}{
+												"columns": map[string]interface{}{
+													"type":        "array",
+													"description": "Column names",
+													"items":       map[string]string{"type": "string"},
+												},
+												"total": map[string]interface{}{
+													"type":        "integer",
+													"description": "Total number of rows (requires {select}{endselect} block)",
+													"nullable":    true,
+												},
+												"page": map[string]interface{}{
+													"type":        "integer",
+													"description": "Current page number",
+													"nullable":    true,
+												},
+												"limit": map[string]interface{}{
+													"type":        "integer",
+													"description": "Items per page",
+													"nullable":    true,
+												},
+												"total_pages": map[string]interface{}{
+													"type":        "integer",
+													"description": "Total number of pages",
+													"nullable":    true,
+												},
+												"has_next": map[string]interface{}{
+													"type":        "boolean",
+													"description": "Has next page",
+													"nullable":    true,
+												},
+												"has_prev": map[string]interface{}{
+													"type":        "boolean",
+													"description": "Has previous page",
+													"nullable":    true,
+												},
+												"next_page": map[string]interface{}{
+													"type":        "integer",
+													"description": "Next page number",
+													"nullable":    true,
+												},
+												"prev_page": map[string]interface{}{
+													"type":        "integer",
+													"description": "Previous page number",
+													"nullable":    true,
+												},
+											},
+										},
+										"error": map[string]interface{}{
+											"type":        "string",
+											"description": "Error message if COUNT query fails",
+											"nullable":    true,
 										},
 									},
 								},
