@@ -6,6 +6,8 @@ import (
 	"dbbridge/internal/core"
 	"encoding/json"
 	"fmt"
+	"log"
+	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -36,7 +38,7 @@ type MetaInfo struct {
 	Columns    []string `json:"columns,omitempty"`
 	Total      *int64   `json:"total,omitempty"`
 	Page       *int     `json:"page,omitempty"`
-	Limit      *int     `json:"limit,omitempty"`
+	PerPage    *int     `json:"per_page,omitempty"`
 	TotalPages *int     `json:"total_pages,omitempty"`
 	HasNext    *bool    `json:"has_next,omitempty"`
 	HasPrev    *bool    `json:"has_prev,omitempty"`
@@ -45,9 +47,12 @@ type MetaInfo struct {
 }
 
 type ExecutionResult struct {
-	Data  []map[string]interface{} `json:"data"`
-	Meta  MetaInfo                 `json:"meta,omitempty"`
-	Error string                   `json:"error,omitempty"`
+	Data       []map[string]interface{} `json:"data"`
+	Meta       MetaInfo                 `json:"meta,omitempty"`
+	Error      string                   `json:"error,omitempty"`
+	DebugSQL   string                   `json:"debug_sql,omitempty"`
+	DebugCount string                   `json:"debug_count_sql,omitempty"`
+	DebugArgs  interface{}              `json:"debug_args,omitempty"`
 }
 
 func (e *QueryExecutor) Execute(ctx context.Context, connectionID int64, querySlug string, params map[string]interface{}) (result *ExecutionResult, err error) {
@@ -137,20 +142,40 @@ func (e *QueryExecutor) ExecuteSQL(ctx context.Context, connectionID int64, sqlT
 		return nil, fmt.Errorf("failed to decrypt connection string: %w", err)
 	}
 
-	// 3. Process system variables like {pagination}
-	sqlText = e.processSystemVariables(sqlText, connDetails.Driver, params, decryptedConnStr)
-
-	// 4. Process ORDER BY pattern {order_by:defaultColumn(whitelist):defaultDir}
-	sqlText = e.processOrderBy(sqlText, params)
-
-	// 5. Process {select}{endselect} block for metadata COUNT query
-	selectBlock := e.processSelectBlock(sqlText)
-
-	// 6. Parse SQL parameters (convert {param} to ?)
+	// STEP 1: Parse original SQL to extract paramNames and defaults
+	// (This must happen BEFORE formatSQL removes the {param} patterns)
 	parseResult := e.parseSQL(sqlText, params)
 
-	// 6. Build Parameter List
-	args, err := e.parser.MapValues(parseResult.ParamNames, params, parseResult.Defaults)
+	// STEP 2: Generate formatted query (replace {param} → ?, except pagination/select/endselect/order_by)
+	formattedSQL := e.formatSQL(sqlText)
+
+	// STEP 3: Generate COUNT query BEFORE pagination is applied
+	// This is important because COUNT should NOT include pagination limits
+	// COUNT query: remove {pagination} entirely, remove {order_by}, keep everything else
+	countQueryBase := formattedSQL
+	countQueryBase = regexp.MustCompile(`(?i)\{\s*pagination(?::\s*\d*\s*:\s*\d*\s*)?\}`).ReplaceAllString(countQueryBase, "")
+	countQueryBase = regexp.MustCompile(`(?i)\{\s*order_by:[^}]+\}`).ReplaceAllString(countQueryBase, "")
+
+	// Generate Main & Count from this base (before pagination)
+	countSelectBlock := e.processSelectBlock(countQueryBase)
+	countSQL := countSelectBlock.CountSQL
+
+	// STEP 4: Process pagination & order_by on formatted query for MAIN query
+	formattedSQL, page, limit := e.processSystemVariables(formattedSQL, connDetails.Driver, params, decryptedConnStr)
+	formattedSQL = e.processOrderBy(formattedSQL, params)
+
+	// Generate Main SQL from the paginated version
+	selectBlock := e.processSelectBlock(formattedSQL)
+	// Use the COUNT SQL generated before pagination (this is the correct COUNT without limits)
+	selectBlock.CountSQL = countSQL
+
+	// STEP 5: Generate exec SQL - replace remaining {param} with ? in the final SQL
+	// Use selectBlock.SQLWithout which has actual column names, not {select}...{endselect}
+	execSQL := e.formatSQL(selectBlock.SQLWithout)
+
+	// STEP 6: Build Parameter List using the paramNames and defaults from STEP 1
+	var args []interface{}
+	args, err = e.parser.MapValues(parseResult.ParamNames, params, parseResult.Defaults)
 	if err != nil {
 		return nil, err
 	}
@@ -172,9 +197,35 @@ func (e *QueryExecutor) ExecuteSQL(ctx context.Context, connectionID int64, sqlT
 	}
 
 	// 8. Execute Query
-	rows, err := db.QueryContext(ctxTimeout, parseResult.SQL, args...)
+	// Special handling for Sybase/SQL Anywhere: batch with params not supported
+	isSybaseBatch := strings.Contains(strings.ToLower(connDetails.Driver), "sql anywhere") ||
+		strings.Contains(strings.ToLower(connDetails.Driver), "sybase")
+	hasParams := len(args) > 0
+	isBatch := strings.Contains(strings.ToLower(execSQL), "begin")
+
+	// For Sybase batch with params, try to execute differently
+	var rows *sql.Rows
+	if isSybaseBatch && hasParams && isBatch {
+		// Try removing BEGIN-END for execution
+		singleSQL := execSQL
+		singleSQL = regexp.MustCompile(`(?i)^\s*BEGIN\s*`).ReplaceAllString(singleSQL, "")
+		singleSQL = regexp.MustCompile(`(?i)\s*END\s*$`).ReplaceAllString(singleSQL, "")
+		singleSQL = strings.TrimSpace(singleSQL)
+
+		log.Printf("[DEBUG] Sybase batch with params - trying without batch wrapper")
+		log.Printf("[DEBUG] Single SQL: %s", singleSQL)
+
+		rows, err = db.QueryContext(ctxTimeout, singleSQL, args...)
+	} else {
+		rows, err = db.QueryContext(ctxTimeout, execSQL, args...)
+	}
+
 	if err != nil {
-		return nil, fmt.Errorf("execution error: %w", err)
+		errMsg := fmt.Sprintf("execution error: %v", err)
+		if os.Getenv("DEBUG") == "true" {
+			errMsg = fmt.Sprintf("%s\n\nSQL: %s\nArgs: %v", errMsg, execSQL, args)
+		}
+		return nil, fmt.Errorf("%s", errMsg)
 	}
 	defer rows.Close()
 
@@ -212,34 +263,7 @@ func (e *QueryExecutor) ExecuteSQL(ctx context.Context, connectionID int64, sqlT
 		resultRows = append(resultRows, rowMap)
 	}
 
-	// 10. Extract page and limit from params
-	page := 1
-	limit := 50
-
-	if p, ok := params["_page"]; ok {
-		if val, ok := p.(float64); ok {
-			page = int(val)
-		} else if val, ok := p.(int); ok {
-			page = val
-		} else if val, ok := p.(string); ok {
-			if v, err := strconv.Atoi(val); err == nil {
-				page = v
-			}
-		}
-	}
-	if l, ok := params["_limit"]; ok {
-		if val, ok := l.(float64); ok {
-			limit = int(val)
-		} else if val, ok := l.(int); ok {
-			limit = val
-		} else if val, ok := l.(string); ok {
-			if v, err := strconv.Atoi(val); err == nil {
-				limit = v
-			}
-		}
-	}
-
-	// 11. Build metadata (only columns if no select block)
+	// 10. Build metadata (only columns if no select block)
 	meta := MetaInfo{
 		Columns: columns,
 	}
@@ -284,7 +308,7 @@ func (e *QueryExecutor) ExecuteSQL(ctx context.Context, connectionID int64, sqlT
 			hasPrev := page > 1
 
 			meta.Page = pagePtr
-			meta.Limit = limitPtr
+			meta.PerPage = limitPtr
 			meta.Total = &total
 			meta.TotalPages = totalPagesPtr
 			meta.HasNext = &hasNext
@@ -301,11 +325,35 @@ func (e *QueryExecutor) ExecuteSQL(ctx context.Context, connectionID int64, sqlT
 		}
 	}
 
-	return &ExecutionResult{
-		Data:  resultRows,
-		Meta:  meta,
-		Error: execError,
-	}, nil
+	var execResult *ExecutionResult
+	if os.Getenv("DEBUG") == "true" {
+		// Replace special chars for JSON safety
+		escapeJSON := func(s string) string {
+			s = strings.ReplaceAll(s, "\\", "\\\\")
+			s = strings.ReplaceAll(s, "\"", "\\\"")
+			s = strings.ReplaceAll(s, "\n", "\\n")
+			s = strings.ReplaceAll(s, "\r", "\\r")
+			s = strings.ReplaceAll(s, "\t", "\\t")
+			return s
+		}
+
+		execResult = &ExecutionResult{
+			Data:       resultRows,
+			Meta:       meta,
+			Error:      execError,
+			DebugSQL:   escapeJSON(execSQL),
+			DebugCount: escapeJSON(selectBlock.CountSQL),
+			DebugArgs:  args,
+		}
+	} else {
+		execResult = &ExecutionResult{
+			Data:  resultRows,
+			Meta:  meta,
+			Error: execError,
+		}
+	}
+
+	return execResult, nil
 }
 
 // Helper to use the existing parser but returning the struct we need
@@ -322,39 +370,64 @@ type SelectBlockResult struct {
 	Error         string
 }
 
+func (e *QueryExecutor) formatSQL(sqlText string) string {
+	re := regexp.MustCompile(`\{\s*([a-zA-Z_][a-zA-Z0-9_]*)(:[^}]*)?\}`)
+
+	formatted := re.ReplaceAllStringFunc(sqlText, func(match string) string {
+		content := match[1 : len(match)-1]
+		parts := strings.SplitN(content, ":", 2)
+		paramName := strings.TrimSpace(parts[0])
+
+		lower := strings.ToLower(paramName)
+		if lower == "pagination" || lower == "select" || lower == "endselect" || lower == "order_by" {
+			return match
+		}
+
+		return "?"
+	})
+
+	return formatted
+}
+
 func (e *QueryExecutor) processSelectBlock(sqlText string) *SelectBlockResult {
-	reOpen := regexp.MustCompile(`(?i)\{\s*select\s*\}`)
-	reClose := regexp.MustCompile(`(?i)\{\s*endselect\s*\}`)
+	// (?s) flag makes . match newlines (dotall mode)
+	reBlock := regexp.MustCompile(`(?si)\{select\}(.*?)\{endselect\}`)
 
-	openLoc := reOpen.FindStringIndex(sqlText)
-	closeLoc := reClose.FindStringIndex(sqlText)
-
-	if openLoc == nil || closeLoc == nil {
+	match := reBlock.FindStringIndex(sqlText)
+	if match == nil {
 		return &SelectBlockResult{
 			HasBlock:   false,
 			SQLWithout: sqlText,
 		}
 	}
 
-	if closeLoc[0] < openLoc[1] {
+	matchContent := reBlock.FindStringSubmatch(sqlText)
+	if matchContent == nil || len(matchContent) < 2 {
 		return &SelectBlockResult{
 			HasBlock:   true,
 			SQLWithout: sqlText,
 			CountSQL:   sqlText,
-			Error:      "Invalid {select}{endselect} block: missing opening tag",
+			Error:      "Invalid {select}{endselect} block",
 		}
 	}
 
-	openEnd := openLoc[1]
-	closeStart := closeLoc[0]
+	selectContent := strings.TrimSpace(matchContent[1])
 
-	selectContent := strings.TrimSpace(sqlText[openEnd:closeStart])
+	// Main query: replace {select}...{endselect} with actual column names
+	mainSQL := reBlock.ReplaceAllString(sqlText, selectContent)
 
-	countSQL := strings.Replace(sqlText, "{select}"+selectContent+"{endselect}", "COUNT(*)", 1)
+	// COUNT query: replace {select}...{endselect} with COUNT(*)
+	countSQL := reBlock.ReplaceAllString(sqlText, "COUNT(*)")
+
+	// Remove {order_by:...} pattern from COUNT query
+	countSQL = regexp.MustCompile(`(?i)\s*\{order_by:[^}]+\}`).ReplaceAllString(countSQL, " ")
+
+	// Remove {pagination} pattern from COUNT query
+	countSQL = regexp.MustCompile(`(?i)\s*\{pagination(?::\s*\d*\s*:\s*\d*\s*)?\}`).ReplaceAllString(countSQL, "")
 
 	return &SelectBlockResult{
 		HasBlock:      true,
-		SQLWithout:    sqlText,
+		SQLWithout:    mainSQL,
 		CountSQL:      countSQL,
 		SelectContent: selectContent,
 	}
@@ -388,7 +461,7 @@ func (e *QueryExecutor) buildMetadata(page, limit int, total int64) MetaInfo {
 
 	return MetaInfo{
 		Page:       pagePtr,
-		Limit:      limitPtr,
+		PerPage:    limitPtr,
 		Total:      totalPtr,
 		TotalPages: totalPagesPtr,
 		HasNext:    hasNextPtr,
@@ -399,9 +472,10 @@ func (e *QueryExecutor) buildMetadata(page, limit int, total int64) MetaInfo {
 }
 
 func (e *QueryExecutor) processOrderBy(sqlText string, params map[string]interface{}) string {
-	// Regex to match {order_by:defaultColumn(whitelist1,whitelist2,...):defaultDirection}
-	// Pattern: {order_by:trdate(id,trdate,type):desc}
-	re := regexp.MustCompile(`(?i)\{\s*order_by\s*:\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*\(\s*([^)]*)\s*\)\s*:\s*(asc|desc)?\s*\}`)
+	// Regex to match:
+	// Simple: {order_by:columnname}
+	// Full: {order_by:defaultColumn(whitelist1,whitelist2,...):defaultDirection}
+	re := regexp.MustCompile(`(?i)\{\s*order_by\s*:\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*(\([^)]*\))?\s*(:\s*(asc|desc))?\s*\}`)
 
 	loc := re.FindStringIndex(sqlText)
 	if loc == nil {
@@ -409,28 +483,31 @@ func (e *QueryExecutor) processOrderBy(sqlText string, params map[string]interfa
 	}
 
 	match := re.FindStringSubmatch(sqlText)
-	if len(match) < 4 {
+	if len(match) < 2 {
 		return sqlText
 	}
 
 	defaultColumn := match[1]
-	whitelistStr := match[2]
-	rawDirection := match[3]
+	whitelistStr := ""
+	defaultDirection := "ASC"
 
-	if rawDirection == "" {
-		rawDirection = "ASC"
+	if len(match) >= 3 && match[2] != "" {
+		whitelistStr = match[2]
 	}
-	defaultDirection := strings.ToUpper(rawDirection)
+	if len(match) >= 5 && match[4] != "" {
+		defaultDirection = strings.ToUpper(match[4])
+	}
 
 	whitelist := make(map[string]bool)
-	for _, col := range strings.Split(whitelistStr, ",") {
-		col = strings.TrimSpace(col)
-		if col != "" {
-			whitelist[strings.ToLower(col)] = true
+	if whitelistStr != "" {
+		for _, col := range strings.Split(whitelistStr[1:len(whitelistStr)-1], ",") {
+			col = strings.TrimSpace(col)
+			if col != "" {
+				whitelist[strings.ToLower(col)] = true
+			}
 		}
 	}
 
-	// Auto-whitelist: if whitelist is empty but default column exists, add it
 	if len(whitelist) == 0 && defaultColumn != "" {
 		whitelist[strings.ToLower(defaultColumn)] = true
 	}
@@ -465,7 +542,7 @@ func (e *QueryExecutor) processOrderBy(sqlText string, params map[string]interfa
 	return finalSQL
 }
 
-func (e *QueryExecutor) processSystemVariables(sqlText string, driver string, params map[string]interface{}, connStr string) string {
+func (e *QueryExecutor) processSystemVariables(sqlText string, driver string, params map[string]interface{}, connStr string) (string, int, int) {
 	// Regex to match {pagination}, {pagination:1:20}, {pagination::20}, {pagination:2:}
 	// Case insensitive due to (?i)
 	re := regexp.MustCompile(`(?i)\{\s*pagination(?::\s*(\d*)\s*:\s*(\d*)\s*)?\}`)
@@ -473,7 +550,7 @@ func (e *QueryExecutor) processSystemVariables(sqlText string, driver string, pa
 	// FindStringIndex returns the first match's indices
 	loc := re.FindStringIndex(sqlText)
 	if loc == nil {
-		return sqlText
+		return sqlText, 1, 50
 	}
 
 	// Default pagination values (Global Default: 1:50)
@@ -497,8 +574,8 @@ func (e *QueryExecutor) processSystemVariables(sqlText string, driver string, pa
 		}
 	}
 
-	// Check params for _page and _limit (from UI or API) - These OVERRIDE everything
-	if p, ok := params["_page"]; ok {
+	// Check params for page and per_page (from UI or API) - These OVERRIDE everything
+	if p, ok := params["page"]; ok {
 		if val, ok := p.(float64); ok { // JSON numbers are float64
 			page = int(val)
 		} else if val, ok := p.(int); ok {
@@ -509,7 +586,7 @@ func (e *QueryExecutor) processSystemVariables(sqlText string, driver string, pa
 			}
 		}
 	}
-	if l, ok := params["_limit"]; ok {
+	if l, ok := params["per_page"]; ok {
 		if val, ok := l.(float64); ok {
 			limit = int(val)
 		} else if val, ok := l.(int); ok {
@@ -557,5 +634,5 @@ func (e *QueryExecutor) processSystemVariables(sqlText string, driver string, pa
 	// Replace only the first occurrence or all? User likely uses one pagination.
 	// Provide full replacement of the matched tag.
 	finalSQL := strings.Replace(sqlText, match[0], replacement, 1)
-	return finalSQL
+	return finalSQL, page, limit
 }

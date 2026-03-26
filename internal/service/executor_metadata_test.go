@@ -127,8 +127,8 @@ func TestBuildMetadata(t *testing.T) {
 			if *meta.Page != tt.page {
 				t.Errorf("Page = %d, want %d", *meta.Page, tt.page)
 			}
-			if *meta.Limit != tt.limit {
-				t.Errorf("Limit = %d, want %d", *meta.Limit, tt.limit)
+			if *meta.PerPage != tt.limit {
+				t.Errorf("PerPage = %d, want %d", *meta.PerPage, tt.limit)
 			}
 			if *meta.Total != tt.total {
 				t.Errorf("Total = %d, want %d", *meta.Total, tt.total)

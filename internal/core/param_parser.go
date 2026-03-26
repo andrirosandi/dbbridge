@@ -35,6 +35,14 @@ func (p *SQLParser) Parse(sqlText string, values map[string]interface{}) *ParseR
 	paramNames := []string{}
 	defaults := make(map[string]interface{})
 
+	// System variables to exclude from parameter parsing
+	systemVars := map[string]bool{
+		"select":     true,
+		"endselect":  true,
+		"order_by":   true,
+		"pagination": true,
+	}
+
 	// Replace all occurrences of {var} or {var:default} with ?
 	transformedSQL := p.regex.ReplaceAllStringFunc(sqlText, func(match string) string {
 		// match is like "{id}" or "{status:active}"
@@ -43,6 +51,11 @@ func (p *SQLParser) Parse(sqlText string, values map[string]interface{}) *ParseR
 
 		parts := strings.SplitN(content, ":", 2)
 		paramName := strings.TrimSpace(parts[0])
+
+		// Skip system variables
+		if systemVars[strings.ToLower(paramName)] {
+			return match // Keep as-is for later processing
+		}
 
 		if len(parts) > 1 {
 			defVal := strings.TrimSpace(parts[1])

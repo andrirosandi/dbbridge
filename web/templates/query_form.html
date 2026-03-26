@@ -27,12 +27,20 @@
         <p>You can use the following dynamic variables in your SQL:</p>
         <ul style="font-size: 0.9em;">
             <li><code>{param}</code> - Standard parameter. User will be prompted to enter a value.</li>
-            <li><code>{status:active}</code> - Parameter with <strong>default value</strong> 'active'.</li>
-            <li><code>{pagination}</code> - Adds <code>LIMIT/OFFSET</code> logic automatically. Controls
-                <code>_page</code> and <code>_limit</code>.
+            <li><code>{param:default_value}</code> - Parameter with <strong>default value</strong>. Used when no value is provided.
+                <br><small>Example: <code>{itemid:%}</code> defaults to <code>%</code> (matches all).</small>
+            </li>
+            <li><code>{pagination}</code> - Adds pagination logic automatically. Controls
+                <code>page</code> and <code>per_page</code>.
             </li>
             <li><code>{pagination:1:20}</code> - Pagination with custom default (Page 1, Limit 20).</li>
             <li><code>{pagination::100}</code> - Pagination with default Limit 100.</li>
+            <li><code>{order_by:column_name}</code> - Dynamic ORDER BY with whitelist validation.
+                <br><small>Example: <code>{order_by:created_at(id,name):desc}</code> - default column is <code>created_at</code>, allowed columns are <code>id</code> and <code>name</code>, default direction is <code>desc</code>.</small>
+            </li>
+            <li><code>{select}col1,col2{endselect}</code> - <strong>Metadata block</strong>. Use this to enable total row count.
+                <br><small>Columns inside this block will be used for the main query. The COUNT(*) query replaces this block.</small>
+            </li>
             <li><code>{ids}</code> - Arrays/Lists are supported! <code>IN ({ids})</code> expands automatically to
                 <code>IN (?, ?, ?)</code>.
                 <ul>
@@ -43,8 +51,26 @@
                 </ul>
             </li>
         </ul>
-        <small><strong>Note:</strong> JSON body parameters <code>_page</code> and <code>_limit</code> override
-            defaults.</small>
+        <p><strong>Example Query:</strong></p>
+        <pre style="font-size: 0.8em; background: #f0f0f0; padding: 10px; border-radius: 4px; overflow-x: auto;">
+SELECT {pagination::50} {select}itemid, description{endselect}
+FROM initem
+WHERE itemid LIKE {itemid:%}
+{order_by:itemid(itemid,description):asc}
+        </pre>
+        <p>This query supports:</p>
+        <ul style="font-size: 0.85em;">
+            <li>Pagination (default 50 items per page)</li>
+            <li>Total count (via {select}...{endselect} block)</li>
+            <li>Search by itemid (default: % = all)</li>
+            <li>Sorting by itemid or description (default: itemid ASC)</li>
+        </ul>
+        <small><strong>Note:</strong> JSON body parameters <code>page</code> and <code>per_page</code> override
+            defaults. Use <code>order_by</code> and <code>order_direction</code> params to control sorting.</small>
+        
+        <p style="margin-top: 10px;"><strong>Reserved Parameter Names:</strong></p>
+        <p style="font-size: 0.85em; color: #c00;">The following names CANNOT be used as user-defined query parameters:</p>
+        <code style="font-size: 0.85em;">page, per_page, order_by, order_direction</code>
     </details>
 
     <div style="margin-top: 1rem;">
@@ -209,17 +235,33 @@
         }
 
         // 1. Detect Params using Regex matching ParseResult logic
-        // Exclude pagination matching
-        const regex = /\{\s*((?!pagination)[a-zA-Z0-9_]+)(?::([^}]+))?\s*\}/g;
+        // Remove {select}...{endselect} blocks first
+        let sqlClean = sql
+            .replace(/\{select\}[^}]*\{endselect\}/gi, '')
+            .replace(/\{endselect\}/gi, '')
+            .replace(/\{select\}/gi, '');
+        
+        // Detect regular params (excluding system variables)
+        const regex = /\{\s*((?!pagination|order_by|select|endselect)[a-zA-Z0-9_]+)(?::([^}]+))?\s*\}/g;
         let match;
         const params = new Map();
 
-        while ((match = regex.exec(sql)) !== null) {
+        while ((match = regex.exec(sqlClean)) !== null) {
             const name = match[1];
             const defFull = match[2] ? match[2].trim() : "";
             if (!params.has(name) || (defFull !== "" && params.get(name) === "")) {
                 params.set(name, defFull);
             }
+        }
+
+        // 2. Check if order_by pattern exists - add order_by and order_direction as optional params
+        const hasOrderBy = /\{order_by:/i.test(sql);
+        if (hasOrderBy) {
+            // Extract default column from {order_by:defaultColumn} pattern
+            const orderMatch = sql.match(/\{order_by:([a-zA-Z_][a-zA-Z0-9_]*)/i);
+            const defaultCol = orderMatch ? orderMatch[1] : '';
+            params.set('order_by', defaultCol);
+            params.set('order_direction', 'asc');
         }
 
         if (params.size > 0) {
@@ -229,9 +271,10 @@
             modalInputs.innerHTML = '';
             params.forEach((defaultValue, param) => {
                 const div = document.createElement('div');
+                const isOptional = (param === 'order_by' || param === 'order_direction');
                 div.innerHTML = `
-                    <label for="param-${param}">${param}</label>
-                    <input type="text" id="param-${param}" name="${param}" value="${defaultValue}" required>
+                    <label for="param-${param}">${param}${isOptional ? ' (optional)' : ''}</label>
+                    <input type="text" id="param-${param}" name="${param}" value="${defaultValue}"${isOptional ? '' : ' required'}>
                 `;
                 modalInputs.appendChild(div);
             });
@@ -272,8 +315,14 @@
         const inputs = modalInputs.querySelectorAll('input');
         let valid = true;
         inputs.forEach(input => {
-            if (!input.value) valid = false;
-            params[input.name] = input.value;
+            const isOptional = (input.name === 'order_by' || input.name === 'order_direction');
+            if (!isOptional && !input.value) {
+                valid = false;
+            }
+            // Always include param, even if empty (for optional params)
+            if (input.value) {
+                params[input.name] = input.value;
+            }
         });
 
         if (!valid) {
@@ -303,9 +352,9 @@
             limitIndicator.innerText = currentLimit;
             btnPrev.disabled = currentPage <= 1;
 
-            // Inject _page and _limit
-            params['_page'] = currentPage;
-            params['_limit'] = currentLimit;
+            // Inject page and per_page
+            params['page'] = currentPage;
+            params['per_page'] = currentLimit;
         } else {
             paginationControls.style.display = 'none';
         }
@@ -365,33 +414,41 @@
             // Show metadata info if available
             let metaInfo = '';
             if (data.meta) {
-                metaInfo = '<small style="color: #666;">';
+                metaInfo = '<div style="margin-top: 10px; padding: 8px; background: #f0f0f0; border-radius: 4px; font-size: 0.75rem;">';
+                metaInfo += '<strong>Meta Info:</strong> ';
                 if (data.meta.total !== undefined && data.meta.total !== null) {
-                    metaInfo += `Total: ${data.meta.total} | `;
+                    metaInfo += ` Total: ${data.meta.total} |`;
                 }
                 if (data.meta.page !== undefined && data.meta.page !== null) {
-                    metaInfo += `Page: ${data.meta.page}`;
+                    metaInfo += ` Page: ${data.meta.page}`;
                     if (data.meta.total_pages !== undefined && data.meta.total_pages !== null) {
                         metaInfo += ` of ${data.meta.total_pages}`;
                     }
-                    metaInfo += ' | ';
+                    metaInfo += ' |';
                 }
-                if (data.meta.limit !== undefined && data.meta.limit !== null) {
-                    metaInfo += `Limit: ${data.meta.limit}`;
+                if (data.meta.per_page !== undefined && data.meta.per_page !== null) {
+                    metaInfo += ` Limit: ${data.meta.per_page}`;
                 }
                 if (data.meta.has_next !== undefined || data.meta.has_prev !== undefined) {
-                    metaInfo += ' | ';
+                    metaInfo += ' |';
                     if (data.meta.has_prev) {
-                        metaInfo += '<a href="#" onclick="loadResults(currentPage - 1); return false;">← Prev</a> ';
+                        metaInfo += ' <a href="#" onclick="loadResults(currentPage - 1); return false;">← Prev</a>';
                     }
                     if (data.meta.has_next) {
-                        metaInfo += '<a href="#" onclick="loadResults(currentPage + 1); return false;">Next →</a>';
+                        metaInfo += ' <a href="#" onclick="loadResults(currentPage + 1); return false;">Next →</a>';
                     }
                 }
-                metaInfo += '</small>';
+                metaInfo += '<br><details style="margin-top: 5px;"><summary style="cursor:pointer; color:#666;">Raw Meta JSON</summary><pre style="margin:5px 0; padding:5px; background:#fff; border:1px solid #ddd; overflow:auto; max-height:150px;">' + JSON.stringify(data.meta, null, 2) + '</pre></details>';
+                metaInfo += '</div>';
             }
 
             resultDiv.innerHTML = html + metaInfo;
+
+            // Debug: Show raw response JSON
+            const debugDiv = document.createElement('div');
+            debugDiv.style.cssText = 'margin-top: 15px; padding: 10px; background: #f5f5f5; border: 1px solid #ddd; border-radius: 4px;';
+            debugDiv.innerHTML = '<details><summary style="cursor:pointer; font-weight:bold; color:#666;">Debug: Full Response JSON</summary><pre style="margin:10px 0 0 0; padding:10px; background:#fff; border:1px solid #ccc; overflow:auto; max-height:200px; font-size:0.7rem;">' + JSON.stringify(data, null, 2) + '</pre></details>';
+            resultDiv.appendChild(debugDiv);
 
         } catch (e) {
             resultDiv.innerHTML = `<article style="background-color: #ffe6e6; color: #cc0000; border: 1px solid #cc0000;"><strong>Error:</strong> ${e.message}</article>`;

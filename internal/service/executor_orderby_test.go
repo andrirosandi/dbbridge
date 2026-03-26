@@ -97,6 +97,24 @@ func TestProcessOrderBy_DefaultValues(t *testing.T) {
 			params:   map[string]interface{}{"order_by": "created_at", "order_direction": "desc"},
 			expected: "SELECT * FROM orders ORDER BY created_at DESC",
 		},
+		{
+			name:     "simple order_by without parentheses - default ASC",
+			sql:      "SELECT * FROM orders {order_by:itemid}",
+			params:   map[string]interface{}{},
+			expected: "SELECT * FROM orders ORDER BY itemid ASC",
+		},
+		{
+			name:     "simple order_by without parentheses - with direction override",
+			sql:      "SELECT * FROM orders {order_by:itemid}",
+			params:   map[string]interface{}{"order_direction": "desc"},
+			expected: "SELECT * FROM orders ORDER BY itemid DESC",
+		},
+		{
+			name:     "simple order_by with pagination",
+			sql:      "SELECT * FROM initem {order_by:itemid} {pagination:1:20}",
+			params:   map[string]interface{}{},
+			expected: "SELECT * FROM initem ORDER BY itemid ASC {pagination:1:20}",
+		},
 	}
 
 	for _, tt := range tests {

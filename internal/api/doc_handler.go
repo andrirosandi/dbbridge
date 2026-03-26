@@ -97,29 +97,45 @@ func (h *DocHandler) GetOpenAPISpec(w http.ResponseWriter, r *http.Request) {
 			exampleBody := make(map[string]interface{})
 
 			hasPagination := false
+			hasOrderBy := false
+
 			// Use same regex as executor for consistency
-			re := regexp.MustCompile(`(?i)\{\s*pagination(?::\s*(\d*)\s*:\s*(\d*)\s*)?\}`)
-			if re.MatchString(q.SQLText) {
+			rePagination := regexp.MustCompile(`(?i)\{\s*pagination(?::\s*(\d*)\s*:\s*(\d*)\s*)?\}`)
+			reOrderBy := regexp.MustCompile(`(?i)\{\s*order_by\s*:`)
+
+			if rePagination.MatchString(q.SQLText) {
 				hasPagination = true
+			}
+			if reOrderBy.MatchString(q.SQLText) {
+				hasOrderBy = true
 			}
 
 			for _, param := range parseRes.ParamNames {
-				// Exclude system variables if any (though parser usually handles standard :param)
-				// Our parser handles {param} too.
-				// {pagination} should be ignored as it's a system variable handled via _page/_limit
-				if strings.ToLower(param) == "pagination" {
-					hasPagination = true
+				// Exclude system variables: pagination, select, endselect, order_by
+				lower := strings.ToLower(param)
+				if lower == "pagination" || lower == "select" || lower == "endselect" || lower == "order_by" {
+					if lower == "pagination" {
+						hasPagination = true
+					}
 					continue
 				}
 
-				properties[param] = map[string]string{"type": "string"} // Default to string for simplicity
+				properties[param] = map[string]string{"type": "string"}
 				exampleBody[param] = "value"
 			}
 
 			// Add Pagination params if {pagination} is present
 			if hasPagination {
-				properties["_page"] = map[string]interface{}{"type": "integer", "default": 1}
-				properties["_limit"] = map[string]interface{}{"type": "integer", "default": 50}
+				properties["page"] = map[string]interface{}{"type": "integer", "default": 1}
+				properties["per_page"] = map[string]interface{}{"type": "integer", "default": 50}
+			}
+
+			// Add Order By params if {order_by} is present
+			if hasOrderBy {
+				properties["order_by"] = map[string]string{"type": "string"}
+				properties["order_direction"] = map[string]string{"type": "string"}
+				exampleBody["order_by"] = "column_name"
+				exampleBody["order_direction"] = "asc"
 			}
 
 			operation := map[string]interface{}{
@@ -155,58 +171,73 @@ func (h *DocHandler) GetOpenAPISpec(w http.ResponseWriter, r *http.Request) {
 										},
 										"meta": map[string]interface{}{
 											"type":        "object",
-											"description": "Metadata information",
+											"description": "Metadata information (pagination, total count)",
 											"properties": map[string]interface{}{
 												"columns": map[string]interface{}{
 													"type":        "array",
-													"description": "Column names",
+													"description": "Column names in the result",
 													"items":       map[string]string{"type": "string"},
 												},
 												"total": map[string]interface{}{
 													"type":        "integer",
-													"description": "Total number of rows (requires {select}{endselect} block)",
+													"description": "Total number of rows (requires {select}...{endselect} block in query)",
 													"nullable":    true,
 												},
 												"page": map[string]interface{}{
 													"type":        "integer",
-													"description": "Current page number",
+													"description": "Current page number (requires {pagination} in query)",
 													"nullable":    true,
 												},
-												"limit": map[string]interface{}{
+												"per_page": map[string]interface{}{
 													"type":        "integer",
-													"description": "Items per page",
+													"description": "Items per page (requires {pagination} in query)",
 													"nullable":    true,
 												},
 												"total_pages": map[string]interface{}{
 													"type":        "integer",
-													"description": "Total number of pages",
+													"description": "Total number of pages (requires {pagination} in query)",
 													"nullable":    true,
 												},
 												"has_next": map[string]interface{}{
 													"type":        "boolean",
-													"description": "Has next page",
+													"description": "Has next page (requires {pagination} in query)",
 													"nullable":    true,
 												},
 												"has_prev": map[string]interface{}{
 													"type":        "boolean",
-													"description": "Has previous page",
+													"description": "Has previous page (requires {pagination} in query)",
 													"nullable":    true,
 												},
 												"next_page": map[string]interface{}{
 													"type":        "integer",
-													"description": "Next page number",
+													"description": "Next page number (requires {pagination} in query)",
 													"nullable":    true,
 												},
 												"prev_page": map[string]interface{}{
 													"type":        "integer",
-													"description": "Previous page number",
+													"description": "Previous page number (requires {pagination} in query)",
 													"nullable":    true,
 												},
 											},
 										},
 										"error": map[string]interface{}{
 											"type":        "string",
-											"description": "Error message if COUNT query fails",
+											"description": "Error message from query execution (COUNT errors are non-fatal)",
+											"nullable":    true,
+										},
+										"debug_sql": map[string]interface{}{
+											"type":        "string",
+											"description": "The actual SQL query executed (only when DEBUG=true env is set)",
+											"nullable":    true,
+										},
+										"debug_count_sql": map[string]interface{}{
+											"type":        "string",
+											"description": "The COUNT query for metadata (only when DEBUG=true env is set)",
+											"nullable":    true,
+										},
+										"debug_args": map[string]interface{}{
+											"type":        "array",
+											"description": "Parameter values used in the query (only when DEBUG=true env is set)",
 											"nullable":    true,
 										},
 									},
@@ -215,7 +246,7 @@ func (h *DocHandler) GetOpenAPISpec(w http.ResponseWriter, r *http.Request) {
 						},
 					},
 					"400": map[string]interface{}{
-						"description": "Bad Request",
+						"description": "Bad Request - Invalid parameters or missing required fields",
 					},
 					"500": map[string]interface{}{
 						"description": "Internal Server Error",
@@ -234,7 +265,7 @@ func (h *DocHandler) GetOpenAPISpec(w http.ResponseWriter, r *http.Request) {
 		"info": map[string]interface{}{
 			"title":       "DbBridge API",
 			"version":     "1.0.0",
-			"description": "Dynamic API generated from Saved Queries.",
+			"description": "Dynamic API generated from Saved Queries.\n\n## Query Variables (in SQL)\n- `{param}` - Standard parameter\n- `{param:default}` - Parameter with default value\n- `{pagination}` or `{pagination:P:L}` - Pagination control\n- `{order_by:col(whitelist):dir}` - Dynamic sorting with whitelist validation\n- `{select}cols{endselect}` - Metadata block for total count\n- Arrays supported: `IN ({ids})` expands to `IN (?, ?, ?)`\n\n## API Parameters\n- `page` - Page number (requires {pagination} in query)\n- `per_page` - Items per page (requires {pagination} in query)\n- `order_by` - Column to sort by (requires {order_by} in query)\n- `order_direction` - Sort direction: `asc` or `desc` (requires {order_by} in query)\n\n## Response Fields\n- `data` - Array of result rows\n- `meta` - Pagination metadata (total, page, per_page, etc.)\n- `error` - Non-fatal error (e.g., COUNT query fails)\n- `debug_sql`, `debug_count_sql`, `debug_args` - Debug info (when DEBUG=true)\n\n## Reserved Parameter Names\nThe following names cannot be used as user-defined query parameters:\npage, per_page, order_by, order_direction",
 		},
 		"servers": []map[string]string{
 			{"url": "http://localhost:8080"},
