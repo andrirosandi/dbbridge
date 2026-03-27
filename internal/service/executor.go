@@ -86,11 +86,6 @@ func (e *QueryExecutor) ExecuteByName(ctx context.Context, connName string, quer
 func (e *QueryExecutor) ExecuteSQL(ctx context.Context, connectionID int64, sqlText string, params map[string]interface{}, queryID int64) (result *ExecutionResult, err error) {
 	startTime := time.Now()
 
-	logger.Info.Printf("=========================================================")
-	logger.Info.Printf("[FASE 0] START - params: %v", params)
-	logger.Info.Printf("[FASE 0] SQL dari DB: %s", sqlText)
-	logger.Info.Printf("=========================================================")
-
 	// Defer Audit Logging
 
 	// Defer Audit Logging (Audit logs might be useful even for ad-hoc queries, usually QueryID=0)
@@ -151,26 +146,14 @@ func (e *QueryExecutor) ExecuteSQL(ctx context.Context, connectionID int64, sqlT
 
 	// STEP 1: Parse original SQL to extract paramNames and defaults
 	// (This must happen BEFORE formatSQL removes the {param} patterns)
-	logger.Info.Printf("=========================================================")
-	logger.Info.Printf("[FASE 1] Parse - params: %v", params)
-	logger.Info.Printf("=========================================================")
 	parseResult := e.parseSQL(sqlText, params)
-	logger.Info.Printf("[FASE 1] ParseResult.SQL: %s", parseResult.SQL)
-	logger.Info.Printf("[FASE 1] ParseResult.ParamNames: %v", parseResult.ParamNames)
-	logger.Info.Printf("[FASE 1] ParseResult.Defaults: %v", parseResult.Defaults)
-	logger.Info.Printf("[FASE 1] ParseResult.RawDefaults: %v", parseResult.RawDefaults)
 
 	// STEP 2: Generate formatted query using parseResult.SQL (which has raw values already replaced)
-	logger.Info.Printf("=========================================================")
-	logger.Info.Printf("[FASE 2] FormatSQL - input: %s", parseResult.SQL)
-	logger.Info.Printf("=========================================================")
 	formattedSQL := e.formatSQL(parseResult.SQL)
-	logger.Info.Printf("[FASE 2] FormatSQL result: %s", formattedSQL)
 
 	// STEP 3: Generate COUNT query BEFORE pagination is applied
-	logger.Info.Printf("=========================================================")
-	logger.Info.Printf("[FASE 3] COUNT Query Base")
-	logger.Info.Printf("=========================================================")
+	// This is important because COUNT should NOT include pagination limits
+	// COUNT query: remove {pagination} entirely, remove {order_by}, keep everything else
 	countQueryBase := formattedSQL
 	countQueryBase = regexp.MustCompile(`(?i)\{\s*pagination(?::\s*\d*\s*:\s*\d*\s*)?\}`).ReplaceAllString(countQueryBase, "")
 	countQueryBase = regexp.MustCompile(`(?i)\{\s*order_by:[^}]+\}`).ReplaceAllString(countQueryBase, "")
@@ -178,40 +161,23 @@ func (e *QueryExecutor) ExecuteSQL(ctx context.Context, connectionID int64, sqlT
 	// Generate Main & Count from this base (before pagination)
 	countSelectBlock := e.processSelectBlock(countQueryBase)
 	countSQL := countSelectBlock.CountSQL
-	logger.Info.Printf("[FASE 3] COUNT SQL: %s", countSQL)
 
 	// STEP 4: Process pagination & order_by on formatted query for MAIN query
-	logger.Info.Printf("=========================================================")
-	logger.Info.Printf("[FASE 4] Process Pagination & OrderBy")
-	logger.Info.Printf("=========================================================")
 	formattedSQL, page, limit := e.processSystemVariables(formattedSQL, connDetails.Driver, params, decryptedConnStr)
 	formattedSQL = e.processOrderBy(formattedSQL, params)
-	logger.Info.Printf("[FASE 4] After pagination/orderby: %s", formattedSQL)
 
 	// Generate Main SQL from the paginated version
 	selectBlock := e.processSelectBlock(formattedSQL)
 	// Use the COUNT SQL generated before pagination (this is the correct COUNT without limits)
 	selectBlock.CountSQL = countSQL
-	logger.Info.Printf("[FASE 4] selectBlock.SQLWithout: %s", selectBlock.SQLWithout)
 
 	// STEP 5: Generate exec SQL - replace remaining {param} with ? in the final SQL
 	// Use selectBlock.SQLWithout which has actual column names, not {select}...{endselect}
-	logger.Info.Printf("=========================================================")
-	logger.Info.Printf("[FASE 5] ExecSQL - input: %s", selectBlock.SQLWithout)
-	logger.Info.Printf("=========================================================")
 	execSQL := e.formatSQL(selectBlock.SQLWithout)
-	logger.Info.Printf("[FASE 5] ExecSQL result: %s", execSQL)
 
 	// STEP 6: Build Parameter List using the paramNames and defaults from STEP 1
-	logger.Info.Printf("=========================================================")
-	logger.Info.Printf("[FASE 6] MapValues - ParamNames: %v", parseResult.ParamNames)
-	logger.Info.Printf("[FASE 6] MapValues - values: %v", params)
-	logger.Info.Printf("[FASE 6] MapValues - defaults: %v", parseResult.Defaults)
-	logger.Info.Printf("[FASE 6] MapValues - rawDefaults: %v", parseResult.RawDefaults)
-	logger.Info.Printf("=========================================================")
 	var args []interface{}
 	args, err = e.parser.MapValues(parseResult.ParamNames, params, parseResult.Defaults, parseResult.RawDefaults)
-	logger.Info.Printf("[FASE 6] MapValues result (args): %v", args)
 	if err != nil {
 		return nil, err
 	}
