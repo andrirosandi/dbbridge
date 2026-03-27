@@ -29,16 +29,10 @@ func (h *Handler) ExecuteQuery(w http.ResponseWriter, r *http.Request) {
 	connName := chi.URLParam(r, "connectionName")
 	querySlug := chi.URLParam(r, "querySlug")
 
-	// Look up connection by Name (using Repo directly or via Executor if added)
-	// Executor currently only has Execute with connID.
-	// We need to resolve Name -> ID here or add ExecuteByName to Executor.
-	// Let's resolve here to keep Executor simple, but Handler needs access to ConnRepo.
-	// Handler struct only has Executor.
-	// Best approach: Add ExecuteByName to Executor.
-
 	// Parse body params
 	var params map[string]interface{}
 	if r.Body != nil {
+		defer r.Body.Close()
 		json.NewDecoder(r.Body).Decode(&params)
 	}
 	if params == nil {

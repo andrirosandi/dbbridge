@@ -106,7 +106,7 @@ func TestTwoStepFlow_Defaults(t *testing.T) {
 				}
 			}
 
-			args, err := parser.MapValues(parseResult.ParamNames, tt.params, parseResult.Defaults)
+			args, err := parser.MapValues(parseResult.ParamNames, tt.params, parseResult.Defaults, parseResult.RawDefaults)
 			if err != nil {
 				t.Errorf("MapValues error: %v", err)
 				return

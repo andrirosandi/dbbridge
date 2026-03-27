@@ -271,12 +271,28 @@ WHERE itemid LIKE {itemid:%}
             modalInputs.innerHTML = '';
             params.forEach((defaultValue, param) => {
                 const div = document.createElement('div');
-                const isOptional = (param === 'order_by' || param === 'order_direction');
+                const hasDefault = defaultValue !== "";
+                const checkboxId = `ignore_${param}`;
                 div.innerHTML = `
-                    <label for="param-${param}">${param}${isOptional ? ' (optional)' : ''}</label>
-                    <input type="text" id="param-${param}" name="${param}" value="${defaultValue}"${isOptional ? '' : ' required'}>
+                    <label for="param-${param}">${param}</label>
+                    <input type="text" id="param-${param}" name="${param}" value="" required>
+                    ${hasDefault ? `
+                        <label style="margin-left: 10px; font-size: 0.9em;">
+                            <input type="checkbox" id="${checkboxId}" name="ignore_${param}" value="1" checked>
+                            Ignore (use default)
+                        </label>
+                    ` : ''}
                 `;
                 modalInputs.appendChild(div);
+                
+                // Add event listener to uncheck when user types
+                if (hasDefault) {
+                    const textInput = div.querySelector(`#param-${param}`);
+                    const checkbox = div.querySelector(`#${checkboxId}`);
+                    textInput.addEventListener('input', function() {
+                        checkbox.checked = false;
+                    });
+                }
             });
 
             modal.open = true;
@@ -310,25 +326,20 @@ WHERE itemid LIKE {itemid:%}
     });
 
     function submitModal() {
-        // Collect params
+        // Collect params - allow empty values, backend handles defaults
         const params = {};
-        const inputs = modalInputs.querySelectorAll('input');
-        let valid = true;
-        inputs.forEach(input => {
-            const isOptional = (input.name === 'order_by' || input.name === 'order_direction');
-            if (!isOptional && !input.value) {
-                valid = false;
-            }
-            // Always include param, even if empty (for optional params)
-            if (input.value) {
-                params[input.name] = input.value;
+        const textInputs = modalInputs.querySelectorAll('input[type="text"]');
+        textInputs.forEach(input => {
+            const paramName = input.name;
+            const ignoreCheckbox = modalInputs.querySelector(`input[name="ignore_${paramName}"]`);
+            
+            // Only include parameter if:
+            // 1. No ignore checkbox exists, OR
+            // 2. Ignore checkbox exists but is NOT checked
+            if (!ignoreCheckbox || !ignoreCheckbox.checked) {
+                params[paramName] = input.value;
             }
         });
-
-        if (!valid) {
-            alert("Please fill all parameters");
-            return;
-        }
 
         closeModal();
         executeRun(currentConnID, currentConnName, params);
